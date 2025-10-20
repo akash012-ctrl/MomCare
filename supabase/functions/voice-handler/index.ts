@@ -88,6 +88,53 @@ async function generateSpeech(text: string): Promise<ArrayBuffer> {
     return response.arrayBuffer();
 }
 
+async function generateEphemeralToken(
+    userId: string,
+    model?: string,
+    voice?: string,
+    instructions?: string
+): Promise<{ client_secret: string; expires_at: number }> {
+    const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
+    if (!openaiApiKey) throw new Error("OPENAI_API_KEY not configured");
+
+    const defaultInstructions = instructions || `You are a helpful and caring pregnancy assistant for MomCare app. You provide evidence-based guidance on pregnancy, nutrition, health, and wellness. Be warm, empathetic, and supportive. Always encourage users to consult healthcare providers for medical concerns. User ID: ${userId}`;
+
+    const response = await fetch("https://api.openai.com/v1/realtime/sessions", {
+        method: "POST",
+        headers: {
+            "Authorization": `Bearer ${openaiApiKey}`,
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            model: model || "gpt-4o-realtime-preview-2024-12-17",
+            voice: voice || "alloy",
+            instructions: defaultInstructions,
+            turn_detection: {
+                type: "server_vad",
+                threshold: 0.5,
+                prefix_padding_ms: 300,
+                silence_duration_ms: 500,
+            },
+            input_audio_format: "pcm16",
+            output_audio_format: "pcm16",
+            input_audio_transcription: { model: "whisper-1" },
+            temperature: 0.7,
+            max_response_output_tokens: 4096,
+        }),
+    });
+
+    if (!response.ok) {
+        const error = await response.text();
+        throw new Error(`Failed to generate ephemeral token: ${error}`);
+    }
+
+    const data = await response.json();
+    return {
+        client_secret: data.client_secret.value,
+        expires_at: data.client_secret.expires_at,
+    };
+}
+
 Deno.serve(async (req) => {
     if (req.method === "OPTIONS") {
         return new Response("ok", {
@@ -99,7 +146,35 @@ Deno.serve(async (req) => {
         const url = new URL(req.url);
         const action = url.searchParams.get("action");
 
-        if (action === "transcribe") {
+        if (action === "ephemeral") {
+            const body = await req.json();
+            const { userId, model, voice, instructions } = body;
+
+            if (!userId) {
+                return new Response(
+                    JSON.stringify({ error: "Missing required field: userId" }),
+                    {
+                        status: 400,
+                        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+                    }
+                );
+            }
+
+            const tokenData = await generateEphemeralToken(userId, model, voice, instructions);
+
+            return new Response(
+                JSON.stringify({
+                    success: true,
+                    client_secret: tokenData.client_secret,
+                    expires_at: tokenData.expires_at,
+                    model: model || "gpt-4o-realtime-preview-2024-12-17",
+                    voice: voice || "alloy",
+                }),
+                {
+                    headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+                }
+            );
+        } else if (action === "transcribe") {
             const body = (await req.json()) as TranscribeRequest;
             const { audioBase64, userId, conversationId } = body;
 
@@ -163,7 +238,7 @@ Deno.serve(async (req) => {
         } else {
             return new Response(
                 JSON.stringify({
-                    error: "Invalid action. Use ?action=transcribe or ?action=speak",
+                    error: "Invalid action. Use ?action=ephemeral, ?action=transcribe or ?action=speak",
                 }),
                 {
                     status: 400,

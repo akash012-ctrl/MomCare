@@ -1,0 +1,133 @@
+import { createClient } from "jsr:@supabase/supabase-js@2";
+
+// Environment variables for security
+const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+const corsHeaders = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers":
+        "authorization, x-client-info, apikey, content-type",
+};
+
+interface EphemeralTokenRequest {
+    model?: string;
+    voice?: string;
+    instructions?: string;
+}
+
+interface EphemeralTokenResponse {
+    client_secret: {
+        value: string;
+        expires_at: number;
+    };
+}
+
+Deno.serve(async (req) => {
+    // Handle CORS preflight
+    if (req.method === "OPTIONS") {
+        return new Response(null, { headers: corsHeaders });
+    }
+
+    try {
+        // Verify authentication
+        const authHeader = req.headers.get("Authorization");
+        if (!authHeader) {
+            return new Response(
+                JSON.stringify({ error: "Missing authorization header" }),
+                { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+        }
+
+        // Initialize Supabase client with service role
+        const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+            global: {
+                headers: { Authorization: authHeader },
+            },
+        });
+
+        // Verify the user is authenticated
+        const {
+            data: { user },
+            error: authError,
+        } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
+
+        if (authError || !user) {
+            return new Response(
+                JSON.stringify({ error: "Unauthorized" }),
+                { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+        }
+
+        // Parse request body
+        const body: EphemeralTokenRequest = await req.json();
+        const model = body.model || "gpt-4o-realtime-preview-2024-12-17";
+        const voice = body.voice || "alloy";
+        const instructions = body.instructions || `You are a helpful and caring pregnancy assistant for MomCare app. 
+You provide evidence-based guidance on pregnancy, nutrition, health, and wellness. 
+Be warm, empathetic, and supportive. Always encourage users to consult healthcare providers for medical concerns.
+User ID: ${user.id}`;
+
+        // Generate ephemeral token from OpenAI
+        const response = await fetch("https://api.openai.com/v1/realtime/sessions", {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${OPENAI_API_KEY}`,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                model: model,
+                voice: voice,
+                instructions: instructions,
+                turn_detection: {
+                    type: "server_vad",
+                    threshold: 0.5,
+                    prefix_padding_ms: 300,
+                    silence_duration_ms: 500
+                },
+                input_audio_format: "pcm16",
+                output_audio_format: "pcm16",
+                input_audio_transcription: {
+                    model: "whisper-1"
+                },
+                temperature: 0.7,
+                max_response_output_tokens: 4096,
+            }),
+        });
+
+        if (!response.ok) {
+            const error = await response.text();
+            console.error("OpenAI API error:", error);
+            return new Response(
+                JSON.stringify({ error: "Failed to generate ephemeral token", details: error }),
+                { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+        }
+
+        const data: EphemeralTokenResponse = await response.json();
+
+        // Log usage for analytics
+        await supabase.from("token_usage").insert({
+            user_id: user.id,
+            request_type: "realtime_voice",
+            created_at: new Date().toISOString(),
+        });
+
+        return new Response(
+            JSON.stringify({
+                client_secret: data.client_secret.value,
+                expires_at: data.client_secret.expires_at,
+                model: model,
+                voice: voice,
+            }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+    } catch (error) {
+        console.error("Error in realtime-token function:", error);
+        return new Response(
+            JSON.stringify({ error: error instanceof Error ? error.message : "Internal server error" }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+    }
+});

@@ -76,3 +76,5 @@
 - **Do NOT** skip error handling for AI operations
 - **Do NOT** forget to include user context in AI prompts
 - **Do NOT** ignore authentication in API routes
+
+add the #TODO in the place where you want somthing to be implemented in later stages

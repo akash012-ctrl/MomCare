@@ -2,12 +2,13 @@ import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { MotiView } from "moti";
 import {
+  FlatList,
   Pressable,
   SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
-  View,
+  View
 } from "react-native";
 
 import { MotherhoodTheme } from "@/constants/theme";
@@ -50,48 +51,52 @@ const trackSections = [
 export default function TrackHubScreen() {
   const router = useRouter();
 
+  const renderGridItem = ({ item, index }: { item: typeof trackSections[0]; index: number }) => (
+    <MotiView
+      key={item.title}
+      from={{ opacity: 0, translateY: 24 }}
+      animate={{ opacity: 1, translateY: 0 }}
+      transition={{ delay: 80 * index, type: "timing", duration: 300 }}
+      style={styles.gridItemWrapper}
+    >
+      <Pressable
+        onPress={() => router.push(item.route as never)}
+        style={({ pressed }) => [
+          styles.gridCard,
+          pressed && styles.gridCardPressed,
+        ]}
+      >
+        <View style={styles.gridIconBadge}>
+          <Feather
+            name={item.icon as keyof typeof Feather.glyphMap}
+            size={28}
+            color={colors.primary}
+          />
+        </View>
+        <Text style={styles.gridTitle}>{item.title}</Text>
+        <Text style={styles.gridCaption}>{item.subtitle}</Text>
+      </Pressable>
+    </MotiView>
+  );
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.heading}>Track & Reflect</Text>
-        <Text style={styles.subheading}>
-          Stay mindful of your health journey with these tools.
-        </Text>
-        <View style={styles.sectionList}>
-          {trackSections.map((section, index) => (
-            <MotiView
-              key={section.title}
-              from={{ opacity: 0, translateY: 24 }}
-              animate={{ opacity: 1, translateY: 0 }}
-              transition={{ delay: 80 * index, type: "timing", duration: 300 }}
-            >
-              <Pressable
-                onPress={() => router.push(section.route as never)}
-                style={({ pressed }) => [
-                  styles.card,
-                  pressed && styles.cardPressed,
-                ]}
-              >
-                <View style={styles.iconBadge}>
-                  <Feather
-                    name={section.icon as keyof typeof Feather.glyphMap}
-                    size={22}
-                    color={colors.primary}
-                  />
-                </View>
-                <View style={styles.cardText}>
-                  <Text style={styles.title}>{section.title}</Text>
-                  <Text style={styles.caption}>{section.subtitle}</Text>
-                </View>
-                <Feather
-                  name="chevron-right"
-                  size={22}
-                  color={colors.textSecondary}
-                />
-              </Pressable>
-            </MotiView>
-          ))}
+        <View style={styles.headerSection}>
+          <Text style={styles.heading}>Track</Text>
+          <Text style={styles.subheading}>
+            Stay mindful of your health journey with these tools.
+          </Text>
         </View>
+        <FlatList
+          data={trackSections}
+          renderItem={renderGridItem}
+          keyExtractor={(item) => item.title}
+          numColumns={2}
+          columnWrapperStyle={styles.columnWrapper}
+          scrollEnabled={false}
+          contentContainerStyle={styles.gridContainer}
+        />
       </ScrollView>
     </SafeAreaView>
   );
@@ -103,20 +108,73 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   container: {
-    padding: spacing.lg,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.xxxl,
+    paddingBottom: spacing.lg,
     gap: spacing.lg,
+  },
+  headerSection: {
+    marginBottom: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.mutedPink,
+    paddingBottom: spacing.lg,
   },
   heading: {
     fontSize: typography.headline,
     fontWeight: "700",
     color: colors.textPrimary,
+    marginBottom: spacing.sm,
   },
   subheading: {
     fontSize: typography.body,
     color: colors.textSecondary,
+    lineHeight: 22,
   },
   sectionList: {
     gap: spacing.md,
+  },
+  gridContainer: {
+    gap: spacing.md,
+  },
+  columnWrapper: {
+    gap: spacing.md,
+  },
+  gridItemWrapper: {
+    flex: 1,
+  },
+  gridCard: {
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    padding: spacing.lg,
+    minHeight: 160,
+    ...shadows.card,
+  },
+  gridCardPressed: {
+    transform: [{ scale: 0.95 }],
+  },
+  gridIconBadge: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.mutedPink,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: spacing.md,
+  },
+  gridTitle: {
+    fontSize: typography.subtitle,
+    fontWeight: "600",
+    color: colors.textPrimary,
+    textAlign: "center",
+    marginBottom: spacing.xs,
+  },
+  gridCaption: {
+    fontSize: typography.label,
+    color: colors.textSecondary,
+    textAlign: "center",
+    lineHeight: 18,
   },
   card: {
     flexDirection: "row",

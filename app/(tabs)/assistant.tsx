@@ -22,6 +22,7 @@ import { getConversationHistory, sendChatMessage } from "@/lib/supabase-api";
 
 const { colors, radii, spacing, typography, shadows } = MotherhoodTheme;
 
+type TabType = "chat" | "voice";
 type AssistantMessage = ChatMessage & {
   id: string;
   metadata?: Record<string, unknown>;
@@ -182,14 +183,14 @@ function ChatInput({
         >
           <Ionicons
             name={hasImage ? "image" : "image-outline"}
-            size={18}
+            size={30}
             color={hasImage ? colors.primary : colors.textSecondary}
           />
         </Pressable>
         <TextInput
           value={draft}
           onChangeText={onChangeDraft}
-          placeholder="Ask your AI pregnancy companion..."
+          placeholder="Ask your doubts "
           placeholderTextColor="rgba(112, 76, 87, 0.5)"
           multiline
           maxLength={800}
@@ -228,8 +229,198 @@ function ChatInput({
   );
 }
 
+function TabSelector({
+  activeTab,
+  onTabChange,
+}: {
+  activeTab: TabType;
+  onTabChange: (tab: TabType) => void;
+}) {
+  return (
+    <View style={styles.tabContainer}>
+      <Pressable
+        onPress={() => onTabChange("chat")}
+        style={[
+          styles.tabButton,
+          activeTab === "chat" && styles.tabButtonActive,
+        ]}
+      >
+        <Ionicons
+          name="chatbubbles"
+          size={24}
+          color={activeTab === "chat" ? colors.surface : colors.textSecondary}
+        />
+        <Text
+          style={[
+            styles.tabButtonText,
+            activeTab === "chat" && styles.tabButtonTextActive,
+          ]}
+        >
+          Chat Assistant
+        </Text>
+      </Pressable>
+
+      <Pressable
+        onPress={() => onTabChange("voice")}
+        style={[
+          styles.tabButton,
+          activeTab === "voice" && styles.tabButtonActive,
+        ]}
+      >
+        <Ionicons
+          name="mic"
+          size={24}
+          color={activeTab === "voice" ? colors.surface : colors.textSecondary}
+        />
+        <Text
+          style={[
+            styles.tabButtonText,
+            activeTab === "voice" && styles.tabButtonTextActive,
+          ]}
+        >
+          Voice Assistant
+        </Text>
+      </Pressable>
+    </View>
+  );
+}
+
+function VoiceAssistant({ userId }: { userId: string }) {
+  const [isConnected, setIsConnected] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+
+  const handleConnect = async () => {
+    setIsConnecting(true);
+    setError(null);
+
+    try {
+      // This will be implemented with WebRTC connection
+      // For now, show a placeholder
+      setTimeout(() => {
+        setIsConnected(true);
+        setIsConnecting(false);
+      }, 1500);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to connect");
+      setIsConnecting(false);
+    }
+  };
+
+  const handleDisconnect = () => {
+    setIsConnected(false);
+    setIsSpeaking(false);
+  };
+
+  return (
+    <View style={styles.voiceContainer}>
+      {!isConnected ? (
+        <View style={styles.voiceEmptyState}>
+          <MotiView
+            from={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: "spring", delay: 200 }}
+          >
+            <View style={styles.micIconContainer}>
+              <Ionicons name="mic-outline" size={64} color={colors.primary} />
+            </View>
+          </MotiView>
+
+          <Text style={styles.voiceTitle}>Voice Assistant</Text>
+          <Text style={styles.voiceSubtitle}>
+            Talk naturally with your AI pregnancy assistant.{"\n"}
+            Just tap the button below to start.
+          </Text>
+
+          {error && (
+            <View style={styles.voiceError}>
+              <Ionicons name="warning" size={16} color={colors.danger} />
+              <Text style={styles.voiceErrorText}>{error}</Text>
+            </View>
+          )}
+
+          <Pressable
+            onPress={handleConnect}
+            disabled={isConnecting}
+            style={({ pressed }) => [
+              styles.voiceConnectButton,
+              pressed && styles.voiceConnectButtonPressed,
+              isConnecting && styles.voiceConnectButtonDisabled,
+            ]}
+          >
+            {isConnecting ? (
+              <ActivityIndicator color={colors.surface} />
+            ) : (
+              <>
+                <Ionicons name="mic" size={24} color={colors.surface} />
+                <Text style={styles.voiceConnectButtonText}>Start Voice Chat</Text>
+              </>
+            )}
+          </Pressable>
+
+          <Text style={styles.voiceNote}>
+            Note: Voice Assistant feature is currently in development
+          </Text>
+        </View>
+      ) : (
+        <View style={styles.voiceActiveState}>
+          <MotiView
+            from={{ scale: 1 }}
+            animate={{ scale: isSpeaking ? 1.1 : 1 }}
+            transition={{
+              type: "timing",
+              duration: 500,
+              loop: isSpeaking,
+            }}
+            style={[
+              styles.voiceWaveform,
+              isSpeaking && styles.voiceWaveformActive,
+            ]}
+          >
+            <Ionicons
+              name={isSpeaking ? "mic" : "mic-outline"}
+              size={80}
+              color={colors.surface}
+            />
+          </MotiView>
+
+          <Text style={styles.voiceStatus}>
+            {isSpeaking ? "Listening..." : "Ready to listen"}
+          </Text>
+
+          <View style={styles.voiceControls}>
+            <Pressable
+              onPress={() => setIsSpeaking(!isSpeaking)}
+              style={styles.voiceControlButton}
+            >
+              <Ionicons
+                name={isSpeaking ? "pause" : "play"}
+                size={28}
+                color={colors.primary}
+              />
+            </Pressable>
+
+            <Pressable
+              onPress={handleDisconnect}
+              style={styles.voiceDisconnectButton}
+            >
+              <Ionicons name="close" size={28} color={colors.danger} />
+            </Pressable>
+          </View>
+
+          <Text style={styles.voiceNote}>
+            This is a preview. Full functionality coming soon.
+          </Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
 export default function AssistantScreen() {
   const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState<TabType>("chat");
   const [draft, setDraft] = useState("");
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [activeConversationId, setActiveConversationId] = useState<
@@ -373,88 +564,96 @@ export default function AssistantScreen() {
         </Text>
       </View>
 
-      {showEmptyState ? (
-        <View style={styles.emptyState}>
-          <Ionicons
-            name="chatbubble-ellipses"
-            size={48}
-            color={colors.primary}
-          />
-          <Text style={styles.emptyStateTitle}>Start a Conversation</Text>
-          <Text style={styles.emptyStateText}>
-            Ask anything about your pregnancy, and I will guide you step by
-            step.
-          </Text>
-        </View>
-      ) : (
-        <FlatList
-          ref={flatListRef}
-          data={assistantMessages}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.messageList}
-          renderItem={({ item }) => (
-            <MessageBubble message={item} isUser={item.role === "user"} />
+      <TabSelector activeTab={activeTab} onTabChange={setActiveTab} />
+
+      {activeTab === "chat" ? (
+        <>
+          {showEmptyState ? (
+            <View style={styles.emptyState}>
+              <Ionicons
+                name="chatbubble-ellipses"
+                size={48}
+                color={colors.primary}
+              />
+              <Text style={styles.emptyStateTitle}>Start a Conversation</Text>
+              <Text style={styles.emptyStateText}>
+                Ask anything about your pregnancy, and I will guide you step by
+                step.
+              </Text>
+            </View>
+          ) : (
+            <FlatList
+              ref={flatListRef}
+              data={assistantMessages}
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={styles.messageList}
+              renderItem={({ item }) => (
+                <MessageBubble message={item} isUser={item.role === "user"} />
+              )}
+              ListFooterComponent={
+                isProcessing ? (
+                  <MotiView
+                    from={{ opacity: 0.6 }}
+                    animate={{ opacity: 1 }}
+                    transition={{
+                      type: "timing",
+                      duration: 800,
+                      loop: true,
+                    }}
+                    style={styles.loadingContainer}
+                  >
+                    <ActivityIndicator color={colors.primary} size="small" />
+                    <Text style={styles.loadingLabel}>MomCare is thinking...</Text>
+                    <Pressable onPress={handleStop} style={styles.stopButton}>
+                      <Ionicons name="square" size={14} color={colors.primary} />
+                      <Text style={styles.stopButtonText}>Stop</Text>
+                    </Pressable>
+                  </MotiView>
+                ) : null
+              }
+            />
           )}
-          ListFooterComponent={
-            isProcessing ? (
-              <MotiView
-                from={{ opacity: 0.6 }}
-                animate={{ opacity: 1 }}
-                transition={{
-                  type: "timing",
-                  duration: 800,
-                  loop: true,
-                }}
-                style={styles.loadingContainer}
-              >
-                <ActivityIndicator color={colors.primary} size="small" />
-                <Text style={styles.loadingLabel}>MomCare is thinking...</Text>
-                <Pressable onPress={handleStop} style={styles.stopButton}>
-                  <Ionicons name="square" size={14} color={colors.primary} />
-                  <Text style={styles.stopButtonText}>Stop</Text>
+
+          {error && (
+            <View style={styles.feedbackBanner}>
+              <Ionicons name="warning" size={16} color={colors.primary} />
+              <Text style={styles.feedbackText}>
+                {error || "Something went wrong. Please try again."}
+              </Text>
+              <Pressable onPress={() => setError(null)}>
+                <Ionicons name="close" size={18} color={colors.primary} />
+              </Pressable>
+            </View>
+          )}
+
+          <KeyboardAvoidingView
+            behavior={Platform.select({ ios: "padding", android: undefined })}
+            style={styles.keyboardAvoid}
+          >
+            {selectedImage && (
+              <View style={styles.imagePreviewBanner}>
+                <Ionicons name="image" size={16} color={colors.primary} />
+                <Text style={styles.imagePreviewText}>
+                  Image attached for analysis
+                </Text>
+                <Pressable onPress={() => setSelectedImage(null)}>
+                  <Ionicons name="close" size={18} color={colors.textSecondary} />
                 </Pressable>
-              </MotiView>
-            ) : null
-          }
-        />
+              </View>
+            )}
+            <ChatInput
+              draft={draft}
+              onChangeDraft={setDraft}
+              onSend={handleSend}
+              onToggleImagePicker={() => { }}
+              isSubmitting={isProcessing}
+              hasImage={!!selectedImage}
+            />
+          </KeyboardAvoidingView>
+        </>
+      ) : (
+        <VoiceAssistant userId={user?.id || ""} />
       )}
-
-      {error && (
-        <View style={styles.feedbackBanner}>
-          <Ionicons name="warning" size={16} color={colors.primary} />
-          <Text style={styles.feedbackText}>
-            {error || "Something went wrong. Please try again."}
-          </Text>
-          <Pressable onPress={() => setError(null)}>
-            <Ionicons name="close" size={18} color={colors.primary} />
-          </Pressable>
-        </View>
-      )}
-
-      <KeyboardAvoidingView
-        behavior={Platform.select({ ios: "padding", android: undefined })}
-        style={styles.keyboardAvoid}
-      >
-        {selectedImage && (
-          <View style={styles.imagePreviewBanner}>
-            <Ionicons name="image" size={16} color={colors.primary} />
-            <Text style={styles.imagePreviewText}>
-              Image attached for analysis
-            </Text>
-            <Pressable onPress={() => setSelectedImage(null)}>
-              <Ionicons name="close" size={18} color={colors.textSecondary} />
-            </Pressable>
-          </View>
-        )}
-        <ChatInput
-          draft={draft}
-          onChangeDraft={setDraft}
-          onSend={handleSend}
-          onToggleImagePicker={() => {}}
-          isSubmitting={isProcessing}
-          hasImage={!!selectedImage}
-        />
-      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -651,5 +850,148 @@ const styles = StyleSheet.create({
     fontSize: typography.caption,
     color: colors.primary,
     fontWeight: "600",
+  },
+  tabContainer: {
+    flexDirection: "row",
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F5D6DB",
+  },
+  tabButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: spacing.sm,
+    paddingVertical: spacing.md,
+    borderRadius: radii.md,
+    backgroundColor: colors.surface,
+    ...shadows.soft,
+  },
+  tabButtonActive: {
+    backgroundColor: colors.primary,
+  },
+  tabButtonText: {
+    fontSize: typography.body,
+    fontWeight: "600",
+    color: colors.textSecondary,
+  },
+  tabButtonTextActive: {
+    color: colors.surface,
+  },
+  voiceContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: spacing.xl,
+  },
+  voiceEmptyState: {
+    alignItems: "center",
+    gap: spacing.lg,
+  },
+  micIconContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: colors.mutedPink,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: spacing.md,
+  },
+  voiceTitle: {
+    fontSize: typography.headline,
+    fontWeight: "700",
+    color: colors.textPrimary,
+  },
+  voiceSubtitle: {
+    fontSize: typography.body,
+    color: colors.textSecondary,
+    textAlign: "center",
+    lineHeight: 22,
+  },
+  voiceError: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.sm,
+    backgroundColor: "rgba(239, 154, 154, 0.1)",
+  },
+  voiceErrorText: {
+    fontSize: typography.caption,
+    color: colors.danger,
+  },
+  voiceConnectButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.lg,
+    borderRadius: radii.lg,
+    backgroundColor: colors.primary,
+    ...shadows.card,
+  },
+  voiceConnectButtonPressed: {
+    transform: [{ scale: 0.95 }],
+  },
+  voiceConnectButtonDisabled: {
+    opacity: 0.6,
+  },
+  voiceConnectButtonText: {
+    fontSize: typography.subtitle,
+    fontWeight: "600",
+    color: colors.surface,
+  },
+  voiceNote: {
+    fontSize: typography.caption,
+    color: colors.textSecondary,
+    fontStyle: "italic",
+    textAlign: "center",
+  },
+  voiceActiveState: {
+    alignItems: "center",
+    gap: spacing.xl,
+  },
+  voiceWaveform: {
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+    backgroundColor: colors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+    ...shadows.card,
+  },
+  voiceWaveformActive: {
+    backgroundColor: colors.secondary,
+  },
+  voiceStatus: {
+    fontSize: typography.title,
+    fontWeight: "600",
+    color: colors.textPrimary,
+  },
+  voiceControls: {
+    flexDirection: "row",
+    gap: spacing.xl,
+  },
+  voiceControlButton: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
+    ...shadows.card,
+  },
+  voiceDisconnectButton: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
+    ...shadows.card,
   },
 });

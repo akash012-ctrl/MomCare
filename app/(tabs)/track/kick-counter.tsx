@@ -9,6 +9,8 @@ import { MotiView } from "moti";
 import { useCallback, useEffect, useState } from "react";
 import {
   Alert,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   RefreshControl,
   SafeAreaView,
@@ -16,7 +18,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  View,
+  View
 } from "react-native";
 
 const { colors, radii, spacing, typography } = MotherhoodTheme;
@@ -131,43 +133,13 @@ export default function KickCounter() {
     if (!user?.id) return;
     const newCount = currentCount + 1;
     setCurrentCount(newCount);
-    try {
-      const today = new Date().toISOString().split("T")[0];
-      await supabase
-        .from("kick_counts")
-        .upsert({
-          user_id: user.id,
-          date: today,
-          time_of_day: selectedPeriod,
-          count: newCount,
-          notes: notes || null,
-        });
-      await loadKickData();
-    } catch {
-      setCurrentCount(currentCount);
-    }
-  }, [user?.id, currentCount, selectedPeriod, notes, loadKickData]);
+  }, [user?.id, currentCount, selectedPeriod, notes]);
 
   const decrementKicks = useCallback(async () => {
     if (!user?.id || currentCount <= 0) return;
     const newCount = currentCount - 1;
     setCurrentCount(newCount);
-    try {
-      const today = new Date().toISOString().split("T")[0];
-      await supabase
-        .from("kick_counts")
-        .upsert({
-          user_id: user.id,
-          date: today,
-          time_of_day: selectedPeriod,
-          count: newCount,
-          notes: notes || null,
-        });
-      await loadKickData();
-    } catch {
-      setCurrentCount(currentCount);
-    }
-  }, [user?.id, currentCount, selectedPeriod, notes, loadKickData]);
+  }, [user?.id, currentCount, selectedPeriod, notes]);
 
   const saveNotes = useCallback(async () => {
     if (!user?.id) return;
@@ -183,6 +155,9 @@ export default function KickCounter() {
           notes: notes || null,
         });
       Alert.alert("Success", "Notes saved!");
+      // Reset the log after saving
+      setCurrentCount(0);
+      setNotes("");
     } catch {
       Alert.alert("Error", "Failed to save notes");
     }
@@ -190,128 +165,133 @@ export default function KickCounter() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView
-        contentInsetAdjustmentBehavior="always"
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-        showsVerticalScrollIndicator={false}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
       >
-        <View style={styles.header}>
-          <Pressable onPress={() => router.back()}>
-            <Feather name="arrow-left" size={24} color={colors.textPrimary} />
-          </Pressable>
-          <Text style={styles.headerTitle}>Kick Counter</Text>
-          <View style={{ width: 24 }} />
-        </View>
-
-        <View style={styles.statsRow}>
-          <View style={styles.statWrapper}>
-            <StatCard
-              title="Today"
-              value={todayTotal}
-              subtitle="kicks"
-              variant="primary"
-            />
-          </View>
-          <View style={styles.statWrapper}>
-            <StatCard
-              title="Avg"
-              value={weeklyAverage}
-              subtitle="per day"
-              variant="secondary"
-            />
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Select Period</Text>
-          <View style={styles.periodGrid}>
-            {TIME_PERIODS.map((period) => (
-              <Pressable
-                key={period.value}
-                style={[
-                  styles.periodCard,
-                  {
-                    backgroundColor:
-                      selectedPeriod === period.value
-                        ? period.color
-                        : colors.surface,
-                  },
-                ]}
-                onPress={() => {
-                  setSelectedPeriod(period.value);
-                  const existing = todayKicks.find(
-                    (k) => k.time_of_day === period.value
-                  );
-                  setCurrentCount(existing?.count || 0);
-                  setNotes(existing?.notes || "");
-                }}
-              >
-                <Text style={styles.periodEmoji}>{period.icon}</Text>
-                <Text
-                  style={[
-                    styles.periodLabel,
-                    selectedPeriod === period.value && styles.periodLabelActive,
-                  ]}
-                >
-                  {period.label}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-        </View>
-
-        <MotiView
-          from={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ type: "timing", duration: 300 }}
-          style={styles.counterSection}
+        <ScrollView
+          contentInsetAdjustmentBehavior="always"
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+          showsVerticalScrollIndicator={false}
         >
-          <View style={styles.counterCard}>
-            <Text style={styles.counterLabel}>
-              {TIME_PERIODS.find((p) => p.value === selectedPeriod)?.label}
-            </Text>
-            <Text style={styles.counterValue}>{currentCount}</Text>
-            <View style={styles.counterButtons}>
-              <CircleIconButton
-                icon="remove"
-                onPress={decrementKicks}
-                size={32}
-                backgroundColor={colors.surface}
-                color={colors.textPrimary}
-                disabled={currentCount <= 0}
+          <View style={styles.header}>
+            <Pressable onPress={() => router.back()}>
+              <Feather name="arrow-left" size={24} color={colors.textPrimary} />
+            </Pressable>
+            <Text style={styles.headerTitle}>Kick Counter</Text>
+            <View style={{ width: 24 }} />
+          </View>
+
+          <View style={styles.statsRow}>
+            <View style={styles.statWrapper}>
+              <StatCard
+                title="Today"
+                value={todayTotal}
+                subtitle="kicks"
+                variant="primary"
               />
-              <CircleIconButton
-                icon="add"
-                onPress={incrementKicks}
-                size={32}
-                backgroundColor={colors.accent}
-                color={colors.textPrimary}
+            </View>
+            <View style={styles.statWrapper}>
+              <StatCard
+                title="Avg"
+                value={weeklyAverage}
+                subtitle="per day"
+                variant="secondary"
               />
             </View>
           </View>
-        </MotiView>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Notes</Text>
-          <View style={styles.notesContainer}>
-            <TextInput
-              style={styles.notesInput}
-              placeholder="How did baby feel?"
-              placeholderTextColor={colors.textSecondary}
-              value={notes}
-              onChangeText={setNotes}
-              multiline
-              numberOfLines={3}
-              textAlignVertical="top"
-            />
-            <Pressable style={styles.saveButton} onPress={saveNotes}>
-              <Text style={styles.saveButtonText}>Save</Text>
-            </Pressable>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Select Period</Text>
+            <View style={styles.periodGrid}>
+              {TIME_PERIODS.map((period) => (
+                <Pressable
+                  key={period.value}
+                  style={[
+                    styles.periodCard,
+                    {
+                      backgroundColor:
+                        selectedPeriod === period.value
+                          ? period.color
+                          : colors.surface,
+                    },
+                  ]}
+                  onPress={() => {
+                    setSelectedPeriod(period.value);
+                    const existing = todayKicks.find(
+                      (k) => k.time_of_day === period.value
+                    );
+                    setCurrentCount(existing?.count || 0);
+                    setNotes(existing?.notes || "");
+                  }}
+                >
+                  <Text style={styles.periodEmoji}>{period.icon}</Text>
+                  <Text
+                    style={[
+                      styles.periodLabel,
+                      selectedPeriod === period.value && styles.periodLabelActive,
+                    ]}
+                  >
+                    {period.label}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
           </View>
-        </View>
-      </ScrollView>
+
+          <MotiView
+            from={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ type: "timing", duration: 300 }}
+            style={styles.counterSection}
+          >
+            <View style={styles.counterCard}>
+              <Text style={styles.counterLabel}>
+                {TIME_PERIODS.find((p) => p.value === selectedPeriod)?.label}
+              </Text>
+              <Text style={styles.counterValue}>{currentCount}</Text>
+              <View style={styles.counterButtons}>
+                <CircleIconButton
+                  icon="remove"
+                  onPress={decrementKicks}
+                  size={32}
+                  backgroundColor={colors.surface}
+                  color={colors.textPrimary}
+                  disabled={currentCount <= 0}
+                />
+                <CircleIconButton
+                  icon="add"
+                  onPress={incrementKicks}
+                  size={32}
+                  backgroundColor={colors.accent}
+                  color={colors.textPrimary}
+                />
+              </View>
+            </View>
+          </MotiView>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Notes</Text>
+            <View style={styles.notesContainer}>
+              <TextInput
+                style={styles.notesInput}
+                placeholder="How did baby feel?"
+                placeholderTextColor={colors.textSecondary}
+                value={notes}
+                onChangeText={setNotes}
+                multiline
+                numberOfLines={3}
+                textAlignVertical="top"
+              />
+              <Pressable style={styles.saveButton} onPress={saveNotes}>
+                <Text style={styles.saveButtonText}>Save</Text>
+              </Pressable>
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

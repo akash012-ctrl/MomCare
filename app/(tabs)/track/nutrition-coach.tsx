@@ -123,7 +123,8 @@ export default function NutritionCoach() {
         .from("nutrition_logs")
         .select("*")
         .eq("user_id", user.id)
-        .eq("date", today);
+        .gte("logged_at", `${today}T00:00:00`)
+        .lt("logged_at", `${today}T23:59:59`);
 
       if (error) throw error;
 
@@ -178,12 +179,15 @@ export default function NutritionCoach() {
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
-        <View style={styles.header}>
-          <Pressable onPress={() => router.back()}>
-            <Feather name="arrow-left" size={24} color={colors.textPrimary} />
-          </Pressable>
-          <Text style={styles.headerTitle}>Nutrition Coach</Text>
-          <View style={{ width: 24 }} />
+        <View style={styles.headerWrapper}>
+          <View style={styles.header}>
+            <Pressable onPress={() => router.back()}>
+              <Feather name="arrow-left" size={24} color={colors.textPrimary} />
+            </Pressable>
+            <Text style={styles.headerTitle}>Nutrition Coach</Text>
+            <Text style={styles.tipsBody}>Meal Logging feature is in progress. there might be some error</Text>
+            <View style={{ width: 24 }} />
+          </View>
         </View>
 
         {/* Trimester Info */}
@@ -219,14 +223,14 @@ export default function NutritionCoach() {
                 nutrient.key === "calories_extra"
                   ? todayIntake.calories
                   : nutrient.key === "protein_g"
-                  ? todayIntake.protein_g
-                  : nutrient.key === "iron_mg"
-                  ? todayIntake.iron_mg
-                  : nutrient.key === "calcium_mg"
-                  ? todayIntake.calcium_mg
-                  : nutrient.key === "folic_acid_mcg"
-                  ? todayIntake.folic_acid_mcg
-                  : todayIntake.water_ml;
+                    ? todayIntake.protein_g
+                    : nutrient.key === "iron_mg"
+                      ? todayIntake.iron_mg
+                      : nutrient.key === "calcium_mg"
+                        ? todayIntake.calcium_mg
+                        : nutrient.key === "folic_acid_mcg"
+                          ? todayIntake.folic_acid_mcg
+                          : todayIntake.water_ml;
 
               return (
                 <MotiView
@@ -381,6 +385,9 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
+  },
+  headerWrapper: {
+    paddingTop: spacing.xxxl,
   },
   headerTitle: {
     color: colors.textPrimary,
