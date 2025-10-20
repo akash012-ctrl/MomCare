@@ -1,6 +1,7 @@
 {
     "cli": {
-        "version": ">= 5.0.0"
+        "version": ">= 16.24.1",
+        "appVersionSource": "remote"
     },
     "build": {
         "development": {
@@ -11,11 +12,17 @@
             "distribution": "internal",
             "android": {
                 "buildType": "apk"
+            },
+            "env": {
+                "EXPO_PUBLIC_SUPABASE_URL": "https://czozjpgwkbudduyjusxg.supabase.co",
+                "EXPO_PUBLIC_SUPABASE_KEY": "sb_publishable_Ni2Z5NdY4fy6DbRX4ZiBdA_7HKaLqPN"
             }
         },
         "production": {
-            "android": {
-                "buildType": "app-bundle"
+            "autoIncrement": true,
+            "env": {
+                "EXPO_PUBLIC_SUPABASE_URL": "https://czozjpgwkbudduyjusxg.supabase.co",
+                "EXPO_PUBLIC_SUPABASE_KEY": "sb_publishable_Ni2Z5NdY4fy6DbRX4ZiBdA_7HKaLqPN"
             }
         }
     },
