@@ -91,8 +91,8 @@ function PostureHistoryCard({ analysis }: PostureHistoryCardProps) {
                   postureData?.posture_score >= 75
                     ? "#52C41A"
                     : postureData?.posture_score >= 50
-                    ? "#FAAD14"
-                    : "#FF4D4F",
+                      ? "#FAAD14"
+                      : "#FF4D4F",
               },
             ]}
           >
@@ -338,7 +338,7 @@ export default function ProfileScreen() {
           />
         )}
 
-        
+
 
         {/* Analysis History Section */}
         <View style={styles.analysisSection}>
@@ -424,17 +424,17 @@ export default function ProfileScreen() {
             <ProfileMenuItem
               icon="bell"
               label="Notifications"
-              onPress={() => {}}
+              onPress={() => { }}
             />
             <ProfileMenuItem
               icon="lock"
               label="Privacy & Security"
-              onPress={() => {}}
+              onPress={() => { }}
             />
             <ProfileMenuItem
               icon="help-circle"
               label="Help & Support"
-              onPress={() => {}}
+              onPress={() => { }}
             />
           </View>
         </View>
@@ -462,6 +462,8 @@ const styles = StyleSheet.create({
   container: {
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.lg,
+    marginTop: spacing.xxxl,
+    paddingTop: spacing.xxxl,
     gap: spacing.xxxl,
   },
   userCard: {

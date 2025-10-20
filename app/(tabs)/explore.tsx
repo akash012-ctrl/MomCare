@@ -1,6 +1,6 @@
+import { Feather } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
-import { LinearGradient } from "expo-linear-gradient";
 import React, { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -16,7 +16,6 @@ import {
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { IconSymbol } from "@/components/ui/icon-symbol";
 import { RoundedCard } from "@/components/ui/rounded-card";
 import { MotherhoodTheme } from "@/constants/theme";
 import { supabase } from "@/lib/supabase";
@@ -37,16 +36,16 @@ interface Article {
 interface TabConfig {
   id: string;
   label: string;
-  icon: "book.fill" | "lightbulb.fill" | "flame.fill" | "bookmark.fill";
+  icon: keyof typeof Feather.glyphMap;
 }
 
 const CATEGORIES = ["All", "Pregnancy", "Nutrition", "Posture", "Wellness"];
 
 const TABS: TabConfig[] = [
-  { id: "resources", label: "Resources", icon: "book.fill" },
-  { id: "tips", label: "Tips", icon: "lightbulb.fill" },
-  { id: "trending", label: "Trending", icon: "flame.fill" },
-  { id: "saved", label: "Saved", icon: "bookmark.fill" },
+  { id: "resources", label: "Resources", icon: "book" },
+  { id: "tips", label: "Tips", icon: "zap" },
+  { id: "trending", label: "Trending", icon: "trending-up" },
+  { id: "saved", label: "Saved", icon: "bookmark" },
 ];
 
 const BOOKMARKS_KEY = "@momcare_bookmarks";
@@ -83,7 +82,7 @@ const ResourceCard: React.FC<ResourceCardProps> = ({
             </ThemedText>
             {article.is_trending && (
               <View style={styles.trendingBadge}>
-                <IconSymbol size={12} name="flame.fill" color="#FF6B6B" />
+                <Feather size={12} name="trending-up" color="#FF6B6B" />
                 <ThemedText style={styles.trendingText}>Trending</ThemedText>
               </View>
             )}
@@ -101,7 +100,7 @@ const ResourceCard: React.FC<ResourceCardProps> = ({
             </ThemedText>
           </View>
           <View style={styles.metaItem}>
-            <IconSymbol
+            <Feather
               size={12}
               name="clock"
               color={MotherhoodTheme.colors.textSecondary}
@@ -122,9 +121,9 @@ const ResourceCard: React.FC<ResourceCardProps> = ({
             style={styles.actionButton}
             onPress={() => onShare(article)}
           >
-            <IconSymbol
+            <Feather
               size={16}
-              name="square.and.arrow.up"
+              name="share-2"
               color={MotherhoodTheme.colors.primary}
             />
             <ThemedText style={styles.actionText}>Share</ThemedText>
@@ -134,9 +133,9 @@ const ResourceCard: React.FC<ResourceCardProps> = ({
             style={[styles.actionButton, isSaved && styles.actionButtonActive]}
             onPress={() => onSave(article)}
           >
-            <IconSymbol
+            <Feather
               size={16}
-              name={isSaved ? "bookmark.fill" : "bookmark"}
+              name="bookmark"
               color={
                 isSaved
                   ? MotherhoodTheme.colors.primary
@@ -324,8 +323,8 @@ export default function ExploreScreen() {
         ]}
         onPress={() => setActiveTab(tab.id)}
       >
-        <IconSymbol
-          size={20}
+        <Feather
+          size={25}
           name={tab.icon}
           color={
             activeTab === tab.id
@@ -370,29 +369,23 @@ export default function ExploreScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <LinearGradient
-        colors={[
-          MotherhoodTheme.colors.primary + "20",
-          MotherhoodTheme.colors.background,
-        ]}
-        style={styles.header}
-      >
+      <View style={styles.header}>
         <View style={styles.headerContent}>
           <ThemedText style={styles.headerTitle}>Explore</ThemedText>
           <ThemedText style={styles.headerSubtitle}>
             Discover prenatal guides and wellness tips
           </ThemedText>
         </View>
-      </LinearGradient>
+      </View>
 
       {/* Tab Navigation */}
       <View style={styles.tabContainer}>{TABS.map(renderTabButton)}</View>
 
       {/* Search Bar */}
       <View style={styles.searchContainer}>
-        <IconSymbol
+        <Feather
           size={16}
-          name="magnifyingglass"
+          name="search"
           color={MotherhoodTheme.colors.textSecondary}
         />
         <TextInput
@@ -404,9 +397,9 @@ export default function ExploreScreen() {
         />
         {searchQuery ? (
           <TouchableOpacity onPress={() => setSearchQuery("")}>
-            <IconSymbol
+            <Feather
               size={16}
-              name="xmark.circle.fill"
+              name="x-circle"
               color={MotherhoodTheme.colors.textSecondary}
             />
           </TouchableOpacity>
@@ -450,9 +443,9 @@ export default function ExploreScreen() {
           contentContainerStyle={styles.listContent}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <IconSymbol
+              <Feather
                 size={48}
-                name="book.fill"
+                name="book-open"
                 color={MotherhoodTheme.colors.textSecondary}
               />
               <ThemedText style={styles.emptyText}>
@@ -472,30 +465,36 @@ export default function ExploreScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: MotherhoodTheme.colors.background,
   },
   header: {
     paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 20,
+    paddingTop: 46,
+    paddingBottom: 16,
+    backgroundColor: MotherhoodTheme.colors.surface,
   },
   headerContent: {
-    marginTop: 8,
+    marginTop: 0,
   },
   headerTitle: {
     fontSize: 32,
     fontWeight: "700",
-    marginBottom: 4,
+    marginBottom: 6,
+    color: MotherhoodTheme.colors.textPrimary,
+    lineHeight: 40,
   },
   headerSubtitle: {
     fontSize: 14,
-    opacity: 0.7,
+    color: MotherhoodTheme.colors.textSecondary,
+    lineHeight: 20,
   },
   tabContainer: {
     flexDirection: "row",
     paddingHorizontal: 12,
     paddingVertical: 12,
+    backgroundColor: MotherhoodTheme.colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(0, 0, 0, 0.1)",
+    borderBottomColor: MotherhoodTheme.colors.primary + "30",
   },
   tabButton: {
     flex: 1,
@@ -505,15 +504,17 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   tabButtonActive: {
-    backgroundColor: "rgba(52, 168, 224, 0.1)",
+    backgroundColor: MotherhoodTheme.colors.primary + "20",
   },
   tabLabel: {
     fontSize: 11,
     marginTop: 4,
     fontWeight: "500",
+    color: MotherhoodTheme.colors.textPrimary,
   },
   tabLabelActive: {
     fontWeight: "600",
+    color: MotherhoodTheme.colors.primary,
   },
   searchContainer: {
     flexDirection: "row",
@@ -523,13 +524,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     height: 44,
     borderRadius: 8,
-    backgroundColor: "rgba(0, 0, 0, 0.05)",
+    backgroundColor: MotherhoodTheme.colors.surface,
+    borderWidth: 1,
+    borderColor: MotherhoodTheme.colors.primary + "30",
   },
   searchInput: {
     flex: 1,
     marginHorizontal: 8,
     fontSize: 14,
-    color: "#000",
+    color: MotherhoodTheme.colors.textPrimary,
   },
   categoryContainer: {
     paddingHorizontal: 16,
@@ -543,8 +546,9 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     marginRight: 8,
     borderRadius: 20,
+    backgroundColor: MotherhoodTheme.colors.surface,
     borderWidth: 1,
-    borderColor: "rgba(0, 0, 0, 0.2)",
+    borderColor: MotherhoodTheme.colors.primary + "50",
   },
   chipActive: {
     backgroundColor: MotherhoodTheme.colors.primary,
@@ -553,9 +557,11 @@ const styles = StyleSheet.create({
   chipText: {
     fontSize: 13,
     fontWeight: "500",
+    color: MotherhoodTheme.colors.textPrimary,
   },
   chipTextActive: {
-    color: "#fff",
+    color: MotherhoodTheme.colors.surface,
+    fontWeight: "600",
   },
   listContent: {
     paddingHorizontal: 16,
@@ -574,6 +580,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     marginBottom: 4,
+    color: MotherhoodTheme.colors.textPrimary,
   },
   trendingBadge: {
     flexDirection: "row",
@@ -581,7 +588,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,
-    backgroundColor: "rgba(255, 107, 107, 0.1)",
+    backgroundColor: "rgba(255, 107, 107, 0.15)",
     alignSelf: "flex-start",
   },
   trendingText: {
@@ -592,7 +599,7 @@ const styles = StyleSheet.create({
   },
   cardDescription: {
     fontSize: 13,
-    opacity: 0.7,
+    color: MotherhoodTheme.colors.textSecondary,
     marginBottom: 10,
     lineHeight: 18,
   },
@@ -609,7 +616,7 @@ const styles = StyleSheet.create({
   },
   metaText: {
     fontSize: 11,
-    opacity: 0.6,
+    color: MotherhoodTheme.colors.textSecondary,
   },
   categoryBadge: {
     marginLeft: "auto",
@@ -627,7 +634,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 12,
     borderTopWidth: 1,
-    borderTopColor: "rgba(0, 0, 0, 0.05)",
+    borderTopColor: MotherhoodTheme.colors.primary + "20",
     paddingTop: 10,
   },
   actionButton: {
@@ -653,8 +660,10 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     marginBottom: 12,
-    borderRadius: 6,
-    backgroundColor: MotherhoodTheme.colors.primary + "10",
+    borderRadius: 8,
+    backgroundColor: MotherhoodTheme.colors.primary + "15",
+    borderWidth: 1,
+    borderColor: MotherhoodTheme.colors.primary + "30",
   },
   readMoreText: {
     fontSize: 13,
@@ -671,20 +680,22 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     marginTop: 16,
+    color: MotherhoodTheme.colors.textPrimary,
   },
   emptySubtext: {
     fontSize: 13,
-    opacity: 0.6,
+    color: MotherhoodTheme.colors.textSecondary,
     marginTop: 4,
   },
   loadingContainer: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: MotherhoodTheme.colors.background,
   },
   loadingText: {
     marginTop: 12,
     fontSize: 14,
-    opacity: 0.7,
+    color: MotherhoodTheme.colors.textSecondary,
   },
 });

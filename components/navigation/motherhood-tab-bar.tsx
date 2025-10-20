@@ -13,6 +13,7 @@ const iconMap: Record<string, keyof typeof Feather.glyphMap> = {
   assistant: "message-circle",
   track: "clipboard",
   profile: "user",
+  explore: "compass",
 };
 
 const labelMap: Record<string, string> = {
@@ -20,6 +21,7 @@ const labelMap: Record<string, string> = {
   assistant: "Assistant",
   track: "Track",
   profile: "Profile",
+  explore: "Explore",
 };
 
 interface MotherhoodTabBarItemProps {
