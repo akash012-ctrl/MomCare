@@ -1,4 +1,5 @@
 import { Feather } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { MotiView } from "moti";
@@ -14,6 +15,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { STORAGE_KEYS } from "@/constants/storage";
 import { MotherhoodTheme } from "@/constants/theme";
 import { supabase } from "@/lib/supabase";
 
@@ -77,10 +79,90 @@ interface OnboardingController {
   isFirstSlide: boolean;
   isLastSlide: boolean;
   listRef: React.RefObject<FlatList<OnboardingSlide> | null>;
-  handleNext: () => void;
+  handleNext: () => Promise<void>;
   handlePrevious: () => void;
   handleViewableItemsChanged: (info: { viewableItems: ViewToken[] }) => void;
   viewabilityConfig: { viewAreaCoveragePercentThreshold: number };
+}
+
+interface OnboardingContentProps {
+  slides: OnboardingSlide[];
+  activeIndex: number;
+  listRef: React.RefObject<FlatList<OnboardingSlide> | null>;
+  handleViewableItemsChanged: (info: { viewableItems: ViewToken[] }) => void;
+  viewabilityConfig: { viewAreaCoveragePercentThreshold: number };
+  isFirstSlide: boolean;
+  isLastSlide: boolean;
+  handlePrevious: () => void;
+  handleNext: () => Promise<void>;
+}
+
+function OnboardingContent({
+  slides,
+  activeIndex,
+  listRef,
+  handleViewableItemsChanged,
+  viewabilityConfig,
+  isFirstSlide,
+  isLastSlide,
+  handlePrevious,
+  handleNext,
+}: OnboardingContentProps) {
+  return (
+    <View style={styles.container}>
+      <FlatList
+        ref={listRef}
+        data={slides}
+        keyExtractor={(item) => item.id}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        onViewableItemsChanged={handleViewableItemsChanged}
+        viewabilityConfig={viewabilityConfig}
+        renderItem={({ item, index }) => (
+          <SlideCard slide={item} index={index} />
+        )}
+      />
+
+      <View style={styles.indicatorRow}>
+        {slides.map((_: OnboardingSlide, index: number) => (
+          <SlideIndicator
+            key={index}
+            index={index}
+            isActive={index === activeIndex}
+          />
+        ))}
+      </View>
+
+      <View style={styles.navRow}>
+        <Pressable
+          accessibilityRole="button"
+          disabled={isFirstSlide}
+          onPress={handlePrevious}
+          style={({ pressed }) => [
+            styles.navButton,
+            pressed && styles.navButtonPressed,
+            isFirstSlide && styles.navButtonDisabled,
+          ]}
+        >
+          <Text style={styles.navButtonText}>Previous</Text>
+        </Pressable>
+
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => void handleNext()}
+          style={({ pressed }) => [
+            styles.ctaButton,
+            pressed && styles.ctaButtonPressed,
+          ]}
+        >
+          <Text style={styles.ctaText}>
+            {isLastSlide ? "Start My Journey" : "Next"}
+          </Text>
+        </Pressable>
+      </View>
+    </View>
+  );
 }
 
 function useOnboardingController(
@@ -98,36 +180,45 @@ function useOnboardingController(
   const isFirstSlide = activeIndex === 0;
   const isLastSlide = activeIndex === slides.length - 1;
 
-  const goToSlide = (index: number) => {
+  const goToSlide = useCallback((index: number) => {
     listRef.current?.scrollToIndex({ index, animated: true });
-  };
+  }, []);
 
-  const handleNext = () => {
+  const handleNext = useCallback(async () => {
     if (!isLastSlide) {
       goToSlide(activeIndex + 1);
       return;
     }
-    router.replace("/(tabs)");
-  };
 
-  const handlePrevious = () => {
+    try {
+      await AsyncStorage.setItem(
+        STORAGE_KEYS.hasCompletedOnboarding,
+        "true"
+      );
+    } catch (error) {
+      console.error("Failed to persist onboarding completion:", error);
+    }
+
+    router.replace("/(tabs)");
+  }, [activeIndex, goToSlide, isLastSlide, router]);
+
+  const handlePrevious = useCallback(() => {
     if (!isFirstSlide) {
       goToSlide(activeIndex - 1);
     }
-  };
+  }, [activeIndex, goToSlide, isFirstSlide]);
 
-  const handleViewableItemsChanged = ({
-    viewableItems,
-  }: {
-    viewableItems: ViewToken[];
-  }) => {
-    if (
-      viewableItems.length > 0 &&
-      typeof viewableItems[0].index === "number"
-    ) {
-      setActiveIndex(viewableItems[0].index);
-    }
-  };
+  const handleViewableItemsChanged = useCallback(
+    ({ viewableItems }: { viewableItems: ViewToken[] }) => {
+      if (
+        viewableItems.length > 0 &&
+        typeof viewableItems[0].index === "number"
+      ) {
+        setActiveIndex(viewableItems[0].index);
+      }
+    },
+    []
+  );
 
   return {
     activeIndex,
@@ -216,59 +307,17 @@ export default function OnboardingCarouselScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
-        <FlatList
-          ref={listRef}
-          data={slides}
-          keyExtractor={(item) => item.id}
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          onViewableItemsChanged={handleViewableItemsChanged}
-          viewabilityConfig={viewabilityConfig}
-          renderItem={({ item, index }) => (
-            <SlideCard slide={item} index={index} />
-          )}
-        />
-
-        <View style={styles.indicatorRow}>
-          {slides.map((_: OnboardingSlide, index: number) => (
-            <SlideIndicator
-              key={index}
-              index={index}
-              isActive={index === activeIndex}
-            />
-          ))}
-        </View>
-
-        <View style={styles.navRow}>
-          <Pressable
-            accessibilityRole="button"
-            disabled={isFirstSlide}
-            onPress={handlePrevious}
-            style={({ pressed }) => [
-              styles.navButton,
-              pressed && styles.navButtonPressed,
-              isFirstSlide && styles.navButtonDisabled,
-            ]}
-          >
-            <Text style={styles.navButtonText}>Previous</Text>
-          </Pressable>
-
-          <Pressable
-            accessibilityRole="button"
-            onPress={handleNext}
-            style={({ pressed }) => [
-              styles.ctaButton,
-              pressed && styles.ctaButtonPressed,
-            ]}
-          >
-            <Text style={styles.ctaText}>
-              {isLastSlide ? "Start My Journey" : "Next"}
-            </Text>
-          </Pressable>
-        </View>
-      </View>
+      <OnboardingContent
+        slides={slides}
+        activeIndex={activeIndex}
+        listRef={listRef}
+        handleViewableItemsChanged={handleViewableItemsChanged}
+        viewabilityConfig={viewabilityConfig}
+        isFirstSlide={isFirstSlide}
+        isLastSlide={isLastSlide}
+        handlePrevious={handlePrevious}
+        handleNext={handleNext}
+      />
     </SafeAreaView>
   );
 }
