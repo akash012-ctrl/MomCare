@@ -15,38 +15,38 @@ MomCare addresses the gaps urban Indian mothers face in getting timely, cultural
 
 ```mermaid
 flowchart TD
-    A[App Launch (LIVE)] --> B{Authenticated?}
-    B -- No --> C[Sign Up / Login (LIVE)]
-    C --> D[Profile Setup (LIVE)]
+    A["App Launch — LIVE"] --> B{Authenticated?}
+    B -- No --> C["Sign Up / Login — LIVE"]
+    C --> D["Profile Setup — LIVE"]
     B -- Yes --> D
-    D --> E[Personalized Dashboard (LIVE)]
-    E --> F[Tracking Modules (LIVE)]
-    E --> G[AI Assistant (LIVE)]
-    G --> H[chat-handler Edge Function (LIVE)]
-    H --> I[Contextual Response (LIVE)]
-    E --> J[Image Upload Flow (PENDING)]
-    J --> K[file-upload Edge Function (PENDING)]
-    K --> L[Background Vision Jobs (BLOCKED)]
-    L --> M[Automated Alerts & Doctor Escalation (BLOCKED)]
+    D --> E["Personalized Dashboard — LIVE"]
+    E --> F["Tracking Modules — LIVE"]
+    E --> G["AI Assistant — LIVE"]
+    G --> H["chat-handler Edge Function — LIVE"]
+    H --> I["Contextual Response — LIVE"]
+    E --> J["Image Upload Flow — PENDING"]
+    J --> K["file-upload Edge Function — PENDING"]
+    K --> L["Background Vision Jobs — BLOCKED"]
+    L --> M["Automated Alerts & Doctor Escalation — BLOCKED"]
 ```
 
 ### System Architecture Diagram
 
 ```mermaid
 flowchart LR
-    Client[Expo App (LIVE)] --> Auth[Supabase Auth (LIVE)]
-    Client --> DataEF[data-api Edge Function (LIVE)]
-    Client --> ChatEF[chat-handler Edge Function (LIVE)]
-    Client --> VoiceEF[voice-handler Edge Function (LIVE)]
-    Client --> FileEF[file-upload Edge Function (PENDING)]
-    DataEF --> DB[(Postgres + pgvector (LIVE))]
+    Client["Expo App — LIVE"] --> Auth["Supabase Auth — LIVE"]
+    Client --> DataEF["data-api Edge Function — LIVE"]
+    Client --> ChatEF["chat-handler Edge Function — LIVE"]
+    Client --> VoiceEF["voice-handler Edge Function — LIVE"]
+    Client --> FileEF["file-upload Edge Function — PENDING"]
+    DataEF --> DB["Postgres + pgvector — LIVE"]
     ChatEF --> DB
-    ChatEF --> OpenAI[OpenAI GPT-4o Mini (LIVE)]
+    ChatEF --> OpenAI["OpenAI GPT-4o Mini — LIVE"]
     VoiceEF --> OpenAI
-    FileEF --> Storage[[Supabase Storage (PENDING)]]
-    FileEF --> Jobs[Background Jobs Queue (BLOCKED)]
-    Jobs --> Alerts[Realtime Notifications (BLOCKED)]
-    DB --> Policies[RLS Policies (LIVE)]
+    FileEF --> Storage["Supabase Storage — PENDING"]
+    FileEF --> Jobs["Background Jobs Queue — BLOCKED"]
+    Jobs --> Alerts["Realtime Notifications — BLOCKED"]
+    DB --> Policies["RLS Policies — LIVE"]
 ```
 
 Legend: LIVE = implemented • PENDING = in progress • BLOCKED = not yet available
