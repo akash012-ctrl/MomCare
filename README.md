@@ -27,7 +27,7 @@ flowchart TD
       E --> F{Profile Complete?}
       F -- No --> G[Capture Pregnancy Timeline]
       G --> H[Health History & Risk Factors]
-      H --> I[Preference Center: Language, Notifications]
+      H --> I["Preference Center: Language, Notifications"]
       I --> J[Sync Profile to Supabase]
       F -- Yes --> J
    end
@@ -47,12 +47,12 @@ flowchart TD
    subgraph Conversational Layer
       K --> T[AI Assistant Launcher]
       T --> U{Voice or Text?}
-      U -- Text --> V[Chat Interface with History]
+      U -- Text --> V["Chat Interface with History"]
       U -- Voice --> W[Real-time Voice Session]
-      V --> X[Retrieve Context (Embeddings + Logs)]
+      V --> X["Retrieve Context (Embeddings + Logs)"]
       W --> X
       X --> Y[GPT-4o Response Generation]
-      Y --> Z[Deliver Guidance, Tasks, Reassurance]
+      Y --> Z["Deliver Guidance, Tasks, Reassurance"]
    end
 
    subgraph Proactive Intelligence
@@ -77,7 +77,7 @@ flowchart TD
 
    subgraph Learning Loop & Knowledge Base
       UserDocs[Test Reports & Journals] --> AJ[Secure Upload Flow]
-      AJ --> AK[Embed & Index Documents]
+      AJ --> AK["Embed & Index Documents"]
       AK --> X
       AK --> AL[Contextual Timeline]
       AL --> K
@@ -88,19 +88,61 @@ flowchart TD
 
 ```mermaid
 flowchart LR
-   Client[Expo Mobile Client] -->|Auth & Session| SupabaseAuth[Supabase Auth]
-   Client -->|API Calls| EdgeFns[Supabase Edge Functions]
-   EdgeFns -->|CRUD & RLS| Database[(Postgres + pgvector)]
-   EdgeFns -->|Storage Ops| Storage[[Supabase Storage]]
-   EdgeFns -->|AI Requests| OpenAI[OpenAI GPT-4o Services]
-   EdgeFns -->|Background Jobs| Worker[Background Job Queue]
-   subgraph Security & Observability
-      Logs[Structured Logging]
-      Policies[RLS Policies]
+   subgraph Client_LAYER
+      Client["Expo Mobile App<br/>- React Native + Expo Router<br/>- Platforms: Android, iOS, web"]
    end
-   EdgeFns --> Logs
-   Database --> Policies
+
+   subgraph Supabase_PLATFORM
+      Auth["Supabase Auth<br/>- Email/Password, magic links<br/>- Session stored in SecureStore"]
+      Database[("Postgres + pgvector<br/>- Conversations, tracking data, embeddings<br/>- Row Level Security enforced")]
+      Storage[["Supabase Storage<br/>- Buckets: avatars, meal-images, posture-images<br/>- PENDING: Edge Function upload flow refresh"]]
+      Worker["Background Job Queue<br/>- Supabase scheduled functions<br/>- PENDING: Vision job dispatcher wiring"]
+   end
+
+   subgraph Edge_Functions_Deployed
+      ChatEF["chat-handler<br/>LIVE: Chat orchestration, memory, RAG"]
+      VoiceEF["voice-handler<br/>LIVE: Speech-to-text and text-to-speech"]
+      DataEF["data-api<br/>LIVE: CRUD for symptoms, kicks, goals, alerts, profile"]
+      FileEF["file-upload<br/>PENDING: Image analysis + storage integration"]
+   end
+
+   Client -->|Supabase JS SDK| Auth
+   Client -->|Calls| ChatEF
+   Client -->|Calls| VoiceEF
+   Client -->|Calls| DataEF
+   Client -->|Calls (to-be rebound)| FileEF
+
+   ChatEF -->|Context fetch| Database
+   ChatEF -->|Embedding writes| Database
+   ChatEF -->|AI requests| OpenAI["OpenAI GPT-4o Mini"]
+
+   VoiceEF -->|Transcribe or synthesize| OpenAI
+
+   DataEF -->|CRUD| Database
+
+   FileEF -->|Store files| Storage
+   FileEF -->|Queue analysis jobs| Worker
+   FileEF -->|Vision request (todo)| OpenAIVision["OpenAI GPT-4o Vision<br/>BLOCKED: Awaiting image pipeline"]
+
+   Worker -->|Write results| Database
+   Worker -->|Notify client (todo)| PushService["Push or Realtime Notifications<br/>BLOCKED: No implementation"]
+
+   Auth --> Database
+   Database --> Policies[RLS Policies]
+
+   subgraph Observability
+      Logs["Edge Function Logs<br/>- Supabase dashboard today<br/>- Datadog integration planned"]
+   end
+
+   ChatEF --> Logs
+   VoiceEF --> Logs
+   DataEF --> Logs
+   FileEF --> Logs
 ```
+
+Legend: LIVE = implemented, PENDING = work in progress, BLOCKED = dependency outstanding
+
+Current gaps: the file-upload pipeline, background job dispatcher, and push/realtime notifications are scaffolded but inactive, so image insights and automated follow-up alerts remain unavailable until the new integrations are completed.
 
 ### Upcoming Enhancements
 
