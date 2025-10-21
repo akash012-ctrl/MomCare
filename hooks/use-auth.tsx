@@ -16,6 +16,7 @@ function AuthProviderComponent({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(false); // Only true during explicit auth operations
   const [authError, setAuthError] = useState<string | null>(null);
+  const [preferredLanguage, setPreferredLanguage] = useState<"en" | "hi">("en");
 
   // Restore session on app launch
   useEffect(() => {
@@ -40,6 +41,11 @@ function AuthProviderComponent({ children }: { children: React.ReactNode }) {
             avatar_url: profile?.avatar_url,
             created_at: profile?.created_at,
           });
+
+          // Set preferred language from profile
+          if (profile?.preferred_language) {
+            setPreferredLanguage(profile.preferred_language as "en" | "hi");
+          }
         }
       } catch (err) {
         console.error("Failed to restore session:", err);
@@ -67,12 +73,17 @@ function AuthProviderComponent({ children }: { children: React.ReactNode }) {
             avatar_url: profile?.avatar_url,
             created_at: profile?.created_at,
           });
+
+          // Set preferred language from profile
+          if (profile?.preferred_language) {
+            setPreferredLanguage(profile.preferred_language as "en" | "hi");
+          }
         } else {
           setUser(null);
+          setPreferredLanguage("en"); // Reset to default
         }
       }
     );
-
     return () => {
       authListener?.subscription.unsubscribe();
     };
@@ -209,6 +220,30 @@ function AuthProviderComponent({ children }: { children: React.ReactNode }) {
     setAuthError(null);
   }, []);
 
+  const updateLanguagePreference = useCallback(
+    async (language: "en" | "hi") => {
+      if (!user) return;
+      try {
+        setAuthError(null);
+        const { error } = await supabase
+          .from("user_profiles")
+          .update({ preferred_language: language })
+          .eq("id", user.id);
+
+        if (error) throw error;
+        setPreferredLanguage(language);
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error
+            ? err.message
+            : "Failed to update language preference";
+        setAuthError(errorMessage);
+        throw err;
+      }
+    },
+    [user]
+  );
+
   const resetPassword = useCallback(async (email: string) => {
     try {
       setAuthError(null);
@@ -240,6 +275,8 @@ function AuthProviderComponent({ children }: { children: React.ReactNode }) {
     signOut,
     clearError,
     resetPassword,
+    preferredLanguage,
+    updateLanguagePreference,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

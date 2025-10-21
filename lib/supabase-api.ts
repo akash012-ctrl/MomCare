@@ -16,6 +16,7 @@ export interface ChatRequest {
     userId: string;
     conversationId?: string;
     includeMemory?: boolean;
+    language?: "en" | "hi";
 }
 
 export interface ChatResponse {
@@ -26,29 +27,18 @@ export interface ChatResponse {
     timestamp: string;
 }
 
-export interface VoiceTranscribeRequest {
-    audioBase64: string;
-    userId: string;
-    conversationId?: string;
+// Realtime voice uses WebRTC with ephemeral token - no separate STT/TTS functions needed
+export interface RealtimeTokenRequest {
+    language?: "en" | "hi";
+    model?: string;
 }
 
-export interface VoiceTranscribeResponse {
-    success: boolean;
-    text: string;
+export interface RealtimeTokenResponse {
+    client_secret: string;
+    expires_at: string;
+    model: string;
+    voice: string;
     language: string;
-    timestamp: string;
-}
-
-export interface VoiceSpeakRequest {
-    text: string;
-    userId: string;
-}
-
-export interface VoiceSpeakResponse {
-    success: boolean;
-    audioBase64: string;
-    mimeType: string;
-    timestamp: string;
 }
 
 export interface SymptomLog {
@@ -176,7 +166,8 @@ export async function sendChatMessage(
     messages: ChatMessage[],
     userId: string,
     conversationId?: string,
-    includeMemory: boolean = true
+    includeMemory: boolean = true,
+    language: "en" | "hi" = "en"
 ): Promise<ChatResponse> {
     try {
         const { data, error } = await supabase.functions.invoke('chat-handler', {
@@ -185,6 +176,7 @@ export async function sendChatMessage(
                 userId,
                 conversationId,
                 includeMemory,
+                language,
             },
         });
 
@@ -227,59 +219,28 @@ export async function getConversationHistory(
 
 // ============================================================================
 // VOICE API - Replaces app/api/voice+api.ts
+// Uses WebRTC with realtime-token - no STT/TTS functions needed
 // ============================================================================
 
 /**
- * Transcribe audio to text
- * @param audioBase64 Base64 encoded audio
- * @param userId User ID
- * @param conversationId Optional conversation ID
- * @returns Transcribed text
+ * Get realtime token for WebRTC voice session
+ * @param language Language preference for the session
+ * @returns Ephemeral token and session config
  */
-export async function transcribeAudio(
-    audioBase64: string,
-    userId: string,
-    conversationId?: string
-): Promise<VoiceTranscribeResponse> {
+export async function getRealtimeToken(
+    language: "en" | "hi" = "en"
+): Promise<RealtimeTokenResponse> {
     try {
-        const { data, error } = await supabase.functions.invoke('voice-handler', {
+        const { data, error } = await supabase.functions.invoke('realtime-token', {
             body: {
-                audioBase64,
-                userId,
-                conversationId,
+                language,
             },
         });
 
         if (error) throw error;
-        return data as VoiceTranscribeResponse;
+        return data as RealtimeTokenResponse;
     } catch (error) {
-        console.error('Transcribe audio error:', error);
-        throw error;
-    }
-}
-
-/**
- * Generate speech from text
- * @param text Text to convert to speech
- * @param userId User ID
- * @returns Base64 encoded audio
- */
-export async function generateSpeech(
-    text: string,
-    userId: string
-): Promise<VoiceSpeakResponse> {
-    try {
-        const { data, error } = await supabase.functions.invoke('voice-handler', {
-            body: {
-                text,
-                userId,
-            },
-        });
-
-        if (error) throw error;
-        return data as VoiceSpeakResponse;
-    } catch (error) {
-        console.error('Generate speech error:', error);
+        console.error('Get realtime token error:', error);
         throw error;
     }
 }
@@ -287,10 +248,6 @@ export async function generateSpeech(
 // ============================================================================
 // DATA API - Replaces lib/api.ts
 // ============================================================================
-
-/**
- * Save or get symptoms
- */
 export async function saveSymptom(
     userId: string,
     symptom: SymptomLog

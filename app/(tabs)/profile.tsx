@@ -13,6 +13,7 @@ import {
   View,
 } from "react-native";
 
+import { LanguageSelector } from "@/components/language-selector";
 import { PregnancyStartDatePicker } from "@/components/ui/pregnancy-start-date-picker";
 import { MotherhoodTheme } from "@/constants/theme";
 import { useAuth } from "@/hooks/use-auth";
@@ -91,8 +92,8 @@ function PostureHistoryCard({ analysis }: PostureHistoryCardProps) {
                   postureData?.posture_score >= 75
                     ? "#52C41A"
                     : postureData?.posture_score >= 50
-                      ? "#FAAD14"
-                      : "#FF4D4F",
+                    ? "#FAAD14"
+                    : "#FF4D4F",
               },
             ]}
           >
@@ -160,7 +161,8 @@ function ProfileMenuItem({
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { user, signOut } = useAuth();
+  const { user, signOut, preferredLanguage, updateLanguagePreference } =
+    useAuth();
   const [activeTab, setActiveTab] = useState<"meals" | "posture">("meals");
   const [mealHistory, setMealHistory] = useState<ImageAnalysisResult[]>([]);
   const [postureHistory, setPostureHistory] = useState<ImageAnalysisResult[]>(
@@ -172,6 +174,7 @@ export default function ProfileScreen() {
     null
   );
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
+  const [isUpdatingLanguage, setIsUpdatingLanguage] = useState(false);
 
   const handleSignOut = async () => {
     try {
@@ -230,6 +233,21 @@ export default function ProfileScreen() {
       setError(err instanceof Error ? err.message : "Failed to update date");
     } finally {
       setIsUpdatingProfile(false);
+    }
+  };
+
+  const handleLanguageChange = async (language: "en" | "hi") => {
+    try {
+      setIsUpdatingLanguage(true);
+      await updateLanguagePreference(language);
+      setError(null);
+    } catch (err) {
+      console.error("Error updating language preference:", err);
+      setError(
+        err instanceof Error ? err.message : "Failed to update language"
+      );
+    } finally {
+      setIsUpdatingLanguage(false);
     }
   };
 
@@ -338,7 +356,12 @@ export default function ProfileScreen() {
           />
         )}
 
-
+        {/* Language Preference Section */}
+        <LanguageSelector
+          selectedLanguage={preferredLanguage}
+          onLanguageChange={handleLanguageChange}
+          isLoading={isUpdatingLanguage}
+        />
 
         {/* Analysis History Section */}
         <View style={styles.analysisSection}>
@@ -424,17 +447,17 @@ export default function ProfileScreen() {
             <ProfileMenuItem
               icon="bell"
               label="Notifications"
-              onPress={() => { }}
+              onPress={() => {}}
             />
             <ProfileMenuItem
               icon="lock"
               label="Privacy & Security"
-              onPress={() => { }}
+              onPress={() => {}}
             />
             <ProfileMenuItem
               icon="help-circle"
               label="Help & Support"
-              onPress={() => { }}
+              onPress={() => {}}
             />
           </View>
         </View>

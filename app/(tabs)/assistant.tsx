@@ -18,7 +18,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { MotherhoodTheme } from "@/constants/theme";
 import { useAuth } from "@/hooks/use-auth";
 import type { ChatMessage } from "@/lib/supabase-api";
-import { getConversationHistory, sendChatMessage } from "@/lib/supabase-api";
+import {
+  getConversationHistory,
+  getRealtimeToken,
+  sendChatMessage,
+} from "@/lib/supabase-api";
 
 const { colors, radii, spacing, typography, shadows } = MotherhoodTheme;
 
@@ -285,7 +289,13 @@ function TabSelector({
   );
 }
 
-function VoiceAssistant({ userId }: { userId: string }) {
+function VoiceAssistant({
+  userId,
+  language,
+}: {
+  userId: string;
+  language: "en" | "hi";
+}) {
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -296,7 +306,18 @@ function VoiceAssistant({ userId }: { userId: string }) {
     setError(null);
 
     try {
-      // This will be implemented with WebRTC connection
+      // Get realtime token with language preference
+      const tokenResponse = await getRealtimeToken(language);
+
+      if (!tokenResponse?.client_secret) {
+        throw new Error("Failed to obtain realtime token");
+      }
+
+      // TODO: Initialize WebRTC connection with token
+      // const pc = new RTCPeerConnection();
+      // const dc = pc.createDataChannel("oai-events");
+      // ... WebRTC setup code ...
+
       // For now, show a placeholder
       setTimeout(() => {
         setIsConnected(true);
@@ -354,7 +375,9 @@ function VoiceAssistant({ userId }: { userId: string }) {
             ) : (
               <>
                 <Ionicons name="mic" size={24} color={colors.surface} />
-                <Text style={styles.voiceConnectButtonText}>Start Voice Chat</Text>
+                <Text style={styles.voiceConnectButtonText}>
+                  Start Voice Chat
+                </Text>
               </>
             )}
           </Pressable>
@@ -419,7 +442,7 @@ function VoiceAssistant({ userId }: { userId: string }) {
 }
 
 export default function AssistantScreen() {
-  const { user } = useAuth();
+  const { user, preferredLanguage } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>("chat");
   const [draft, setDraft] = useState("");
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -515,7 +538,8 @@ export default function AssistantScreen() {
         messageList,
         user.id,
         activeConversationId || undefined,
-        true // includeMemory
+        true, // includeMemory
+        preferredLanguage // language preference
       );
 
       if (response?.message) {
@@ -603,9 +627,15 @@ export default function AssistantScreen() {
                     style={styles.loadingContainer}
                   >
                     <ActivityIndicator color={colors.primary} size="small" />
-                    <Text style={styles.loadingLabel}>MomCare is thinking...</Text>
+                    <Text style={styles.loadingLabel}>
+                      MomCare is thinking...
+                    </Text>
                     <Pressable onPress={handleStop} style={styles.stopButton}>
-                      <Ionicons name="square" size={14} color={colors.primary} />
+                      <Ionicons
+                        name="square"
+                        size={14}
+                        color={colors.primary}
+                      />
                       <Text style={styles.stopButtonText}>Stop</Text>
                     </Pressable>
                   </MotiView>
@@ -637,7 +667,11 @@ export default function AssistantScreen() {
                   Image attached for analysis
                 </Text>
                 <Pressable onPress={() => setSelectedImage(null)}>
-                  <Ionicons name="close" size={18} color={colors.textSecondary} />
+                  <Ionicons
+                    name="close"
+                    size={18}
+                    color={colors.textSecondary}
+                  />
                 </Pressable>
               </View>
             )}
@@ -645,14 +679,14 @@ export default function AssistantScreen() {
               draft={draft}
               onChangeDraft={setDraft}
               onSend={handleSend}
-              onToggleImagePicker={() => { }}
+              onToggleImagePicker={() => {}}
               isSubmitting={isProcessing}
               hasImage={!!selectedImage}
             />
           </KeyboardAvoidingView>
         </>
       ) : (
-        <VoiceAssistant userId={user?.id || ""} />
+        <VoiceAssistant userId={user?.id || ""} language={preferredLanguage} />
       )}
     </SafeAreaView>
   );

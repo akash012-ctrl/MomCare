@@ -15,6 +15,8 @@ export interface AuthContextType {
     signOut: () => Promise<void>;
     clearError: () => void;
     resetPassword: (email: string) => Promise<string>;
+    preferredLanguage: "en" | "hi";
+    updateLanguagePreference: (language: "en" | "hi") => Promise<void>;
 }
 
 export interface SignUpParams {
