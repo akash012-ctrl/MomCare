@@ -15,16 +15,73 @@ MomCare addresses the gaps urban Indian mothers face in getting timely, cultural
 
 ```mermaid
 flowchart TD
-   A[User Launches App] --> B{New or Returning?}
-   B -- New --> C[Onboarding & Profile Setup]
-   B -- Returning --> D[Personalized Dashboard]
-   C --> D
-   D --> E[Tracking Modules]
-   D --> F[AI Assistant Chat/Voice]
-   E --> G[Insights & Reminders]
-   F --> G
-   G --> H[Risk Alerts & Care Recommendations]
-   H --> I[Doctor Referral & Follow-up]
+   subgraph Access & Identity
+      A[App Launch] --> B{Authenticated?}
+      B -- No --> C[Signup / Login]
+      C --> D[Create Secure Session]
+      B -- Yes --> E[Restore Session]
+      D --> E
+   end
+
+   subgraph Guided Onboarding
+      E --> F{Profile Complete?}
+      F -- No --> G[Capture Pregnancy Timeline]
+      G --> H[Health History & Risk Factors]
+      H --> I[Preference Center: Language, Notifications]
+      I --> J[Sync Profile to Supabase]
+      F -- Yes --> J
+   end
+
+   subgraph Daily Engagement Hub
+      J --> K[Personalized Dashboard]
+      K --> L[Symptom & Vital Logging]
+      K --> M[Kick Counter & Movement Tracker]
+      K --> N[Nutrition Planner & Goal Setting]
+      K --> O[Image Analysis Entry]
+      O --> P[Capture Meal/Posture Photo]
+      P --> Q[Upload via File Edge Function]
+      Q --> R[Vision Analysis + Background Jobs]
+      R --> S[Insights Stored & Visualised]
+   end
+
+   subgraph Conversational Layer
+      K --> T[AI Assistant Launcher]
+      T --> U{Voice or Text?}
+      U -- Text --> V[Chat Interface with History]
+      U -- Voice --> W[Real-time Voice Session]
+      V --> X[Retrieve Context (Embeddings + Logs)]
+      W --> X
+      X --> Y[GPT-4o Response Generation]
+      Y --> Z[Deliver Guidance, Tasks, Reassurance]
+   end
+
+   subgraph Proactive Intelligence
+      S --> AA[Personalized Reminders]
+      Z --> AA
+      L --> AB[Monitor for Anomalies]
+      M --> AB
+      N --> AB
+      AB --> AC{Risk Level}
+      AC -- Moderate --> AD[Suggest Lifestyle Adjustments]
+      AC -- High --> AE[Trigger Urgent Alert]
+   end
+
+   subgraph Care Continuity & Escalation
+      AE --> AF[Location-based Doctor Recommendation]
+      AF --> AG[Schedule Visit / Telemedicine]
+      AD --> AH[Add Tasks to Checklist]
+      AG --> AH
+      AH --> AI[Track Completion & Feedback]
+      AI --> K
+   end
+
+   subgraph Learning Loop & Knowledge Base
+      UserDocs[Test Reports & Journals] --> AJ[Secure Upload Flow]
+      AJ --> AK[Embed & Index Documents]
+      AK --> X
+      AK --> AL[Contextual Timeline]
+      AL --> K
+   end
 ```
 
 ### System Architecture Diagram
