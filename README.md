@@ -1,4 +1,4 @@
-# MomCare Expo 👋
+# MomCare Expo
 
 MomCare addresses the gaps urban Indian mothers face in getting timely, culturally relevant prenatal guidance by combining clinically vetted content, multilingual support, and AI-driven personalization so that busy families receive evidence-based reminders, risk alerts, and wellness tips without relying solely on fragmented online advice.
 
