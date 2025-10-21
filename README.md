@@ -15,134 +15,43 @@ MomCare addresses the gaps urban Indian mothers face in getting timely, cultural
 
 ```mermaid
 flowchart TD
-   subgraph Access & Identity
-      A[App Launch] --> B{Authenticated?}
-      B -- No --> C[Signup / Login]
-      C --> D[Create Secure Session]
-      B -- Yes --> E[Restore Session]
-      D --> E
-   end
-
-   subgraph Guided Onboarding
-      E --> F{Profile Complete?}
-      F -- No --> G[Capture Pregnancy Timeline]
-      G --> H[Health History & Risk Factors]
-      H --> I["Preference Center: Language, Notifications"]
-      I --> J[Sync Profile to Supabase]
-      F -- Yes --> J
-   end
-
-   subgraph Daily Engagement Hub
-      J --> K[Personalized Dashboard]
-      K --> L[Symptom & Vital Logging]
-      K --> M[Kick Counter & Movement Tracker]
-      K --> N[Nutrition Planner & Goal Setting]
-      K --> O[Image Analysis Entry]
-      O --> P[Capture Meal/Posture Photo]
-      P --> Q[Upload via File Edge Function]
-      Q --> R[Vision Analysis + Background Jobs]
-      R --> S[Insights Stored & Visualised]
-   end
-
-   subgraph Conversational Layer
-      K --> T[AI Assistant Launcher]
-      T --> U{Voice or Text?}
-      U -- Text --> V["Chat Interface with History"]
-      U -- Voice --> W[Real-time Voice Session]
-      V --> X["Retrieve Context (Embeddings + Logs)"]
-      W --> X
-      X --> Y[GPT-4o Response Generation]
-      Y --> Z["Deliver Guidance, Tasks, Reassurance"]
-   end
-
-   subgraph Proactive Intelligence
-      S --> AA[Personalized Reminders]
-      Z --> AA
-      L --> AB[Monitor for Anomalies]
-      M --> AB
-      N --> AB
-      AB --> AC{Risk Level}
-      AC -- Moderate --> AD[Suggest Lifestyle Adjustments]
-      AC -- High --> AE[Trigger Urgent Alert]
-   end
-
-   subgraph Care Continuity & Escalation
-      AE --> AF[Location-based Doctor Recommendation]
-      AF --> AG[Schedule Visit / Telemedicine]
-      AD --> AH[Add Tasks to Checklist]
-      AG --> AH
-      AH --> AI[Track Completion & Feedback]
-      AI --> K
-   end
-
-   subgraph Learning Loop & Knowledge Base
-      UserDocs[Test Reports & Journals] --> AJ[Secure Upload Flow]
-      AJ --> AK["Embed & Index Documents"]
-      AK --> X
-      AK --> AL[Contextual Timeline]
-      AL --> K
-   end
+    A[App Launch (LIVE)] --> B{Authenticated?}
+    B -- No --> C[Sign Up / Login (LIVE)]
+    C --> D[Profile Setup (LIVE)]
+    B -- Yes --> D
+    D --> E[Personalized Dashboard (LIVE)]
+    E --> F[Tracking Modules (LIVE)]
+    E --> G[AI Assistant (LIVE)]
+    G --> H[chat-handler Edge Function (LIVE)]
+    H --> I[Contextual Response (LIVE)]
+    E --> J[Image Upload Flow (PENDING)]
+    J --> K[file-upload Edge Function (PENDING)]
+    K --> L[Background Vision Jobs (BLOCKED)]
+    L --> M[Automated Alerts & Doctor Escalation (BLOCKED)]
 ```
 
 ### System Architecture Diagram
 
 ```mermaid
 flowchart LR
-   subgraph Client_LAYER
-      Client["Expo Mobile App<br/>- React Native + Expo Router<br/>- Platforms: Android, iOS, web"]
-   end
-
-   subgraph Supabase_PLATFORM
-      Auth["Supabase Auth<br/>- Email/Password, magic links<br/>- Session stored in SecureStore"]
-      Database[("Postgres + pgvector<br/>- Conversations, tracking data, embeddings<br/>- Row Level Security enforced")]
-      Storage[["Supabase Storage<br/>- Buckets: avatars, meal-images, posture-images<br/>- PENDING: Edge Function upload flow refresh"]]
-      Worker["Background Job Queue<br/>- Supabase scheduled functions<br/>- PENDING: Vision job dispatcher wiring"]
-   end
-
-   subgraph Edge_Functions_Deployed
-      ChatEF["chat-handler<br/>LIVE: Chat orchestration, memory, RAG"]
-      VoiceEF["voice-handler<br/>LIVE: Speech-to-text and text-to-speech"]
-      DataEF["data-api<br/>LIVE: CRUD for symptoms, kicks, goals, alerts, profile"]
-      FileEF["file-upload<br/>PENDING: Image analysis + storage integration"]
-   end
-
-   Client -->|Supabase JS SDK| Auth
-   Client -->|Calls| ChatEF
-   Client -->|Calls| VoiceEF
-   Client -->|Calls| DataEF
-   Client -->|Calls (to-be rebound)| FileEF
-
-   ChatEF -->|Context fetch| Database
-   ChatEF -->|Embedding writes| Database
-   ChatEF -->|AI requests| OpenAI["OpenAI GPT-4o Mini"]
-
-   VoiceEF -->|Transcribe or synthesize| OpenAI
-
-   DataEF -->|CRUD| Database
-
-   FileEF -->|Store files| Storage
-   FileEF -->|Queue analysis jobs| Worker
-   FileEF -->|Vision request (todo)| OpenAIVision["OpenAI GPT-4o Vision<br/>BLOCKED: Awaiting image pipeline"]
-
-   Worker -->|Write results| Database
-   Worker -->|Notify client (todo)| PushService["Push or Realtime Notifications<br/>BLOCKED: No implementation"]
-
-   Auth --> Database
-   Database --> Policies[RLS Policies]
-
-   subgraph Observability
-      Logs["Edge Function Logs<br/>- Supabase dashboard today<br/>- Datadog integration planned"]
-   end
-
-   ChatEF --> Logs
-   VoiceEF --> Logs
-   DataEF --> Logs
-   FileEF --> Logs
+    Client[Expo App (LIVE)] --> Auth[Supabase Auth (LIVE)]
+    Client --> DataEF[data-api Edge Function (LIVE)]
+    Client --> ChatEF[chat-handler Edge Function (LIVE)]
+    Client --> VoiceEF[voice-handler Edge Function (LIVE)]
+    Client --> FileEF[file-upload Edge Function (PENDING)]
+    DataEF --> DB[(Postgres + pgvector (LIVE))]
+    ChatEF --> DB
+    ChatEF --> OpenAI[OpenAI GPT-4o Mini (LIVE)]
+    VoiceEF --> OpenAI
+    FileEF --> Storage[[Supabase Storage (PENDING)]]
+    FileEF --> Jobs[Background Jobs Queue (BLOCKED)]
+    Jobs --> Alerts[Realtime Notifications (BLOCKED)]
+    DB --> Policies[RLS Policies (LIVE)]
 ```
 
-Legend: LIVE = implemented, PENDING = work in progress, BLOCKED = dependency outstanding
+Legend: LIVE = implemented • PENDING = in progress • BLOCKED = not yet available
 
-Current gaps: the file-upload pipeline, background job dispatcher, and push/realtime notifications are scaffolded but inactive, so image insights and automated follow-up alerts remain unavailable until the new integrations are completed.
+Current gaps: Image uploads, document embeddings, and the background job dispatcher are not wired up, so automated insights and alerts will remain inactive until those pipelines ship.
 
 ### Upcoming Enhancements
 
