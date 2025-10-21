@@ -58,7 +58,7 @@ flowchart LR
     ChatEF --> DB
     ChatEF --> OpenAI["OpenAI GPT-4o-mini Mini with Language Support (EN/HI) — LIVE"]
     VoiceEF --> OpenAI
-    VoiceEF --> gpt-realtime-mini realtime voice[" gpt-realtime-mini Language-Aware — LIVE"]
+    VoiceEF --> Realtime_voice_model[" gpt-realtime-mini Language-Aware — LIVE"]
     FileEF --> Storage["Supabase Storage — PENDING"]
     FileEF --> Jobs["Background Jobs Queue — PENDING"]
     Jobs --> Alerts["Realtime Notifications — PENDING"]
