@@ -24,7 +24,7 @@ flowchart TD
    E --> G[Insights & Reminders]
    F --> G
    G --> H[Risk Alerts & Care Recommendations]
-   H --> I[Doctor Referral & Follow-up (to be done)]
+   H --> I[Doctor Referral & Follow-up ...to be done after]
 ```
 
 ### System Architecture Diagram
