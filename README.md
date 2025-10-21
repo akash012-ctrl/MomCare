@@ -1,5 +1,17 @@
 # MomCare Expo
 
+## Project Motivation
+
+**Empowering Urban Indian Mothers Through Intelligent Prenatal Companionship**
+
+Pregnancy is a transformative yet demanding period requiring access to timely, credible guidance—yet many expectant mothers in urban India face a fragmented landscape of outdated apps, conflicting advice, and overwhelming information gaps. MomCare reimagines prenatal care by delivering an AI-powered companion app that combines clinically vetted evidence (via Retrieval-Augmented Generation), personalized week-by-week guidance, and multilingual support tailored to India's diverse, time-pressed mothers. By integrating intelligent reminders for critical antenatal milestones, medication adherence tracking, culturally relevant nutrition plans, and a 24x7 chatbot grounded in FOGSI and WHO guidelines, the app transforms passive health seeking into proactive, informed care—directly addressing the documented benefits of mobile health interventions in improving maternal knowledge and reducing pregnancy-related risks across India's urban centers.
+
+**Bridging Healthcare Access Through Technology and Localization**
+
+In a country where over 52% of pregnant women struggle with anemia, gestational diabetes rates climb in urban populations, and healthcare information often arrives in a language mothers don't fully understand, MomCare stands as a digital bridge between expert medical care and everyday lived experience. The app's multimodal interface—supporting audio narration, voice queries, and text in English and regional Indian languages—ensures that no mother is left behind by literacy constraints or access barriers. From tracking fetal movements and health metrics to celebrating each developmental milestone with culturally resonant content, MomCare becomes more than an app; it becomes a trusted ally in the journey to motherhood, embodying the principle that every expectant mother deserves intelligent, accessible, and compassionate care—regardless of her schedule, zip code, or language preference.
+
+---
+
 MomCare addresses the gaps urban Indian mothers face in getting timely, culturally relevant prenatal guidance by combining clinically vetted content, multilingual support, and AI-driven personalization so that busy families receive evidence-based reminders, risk alerts, and wellness tips without relying solely on fragmented online advice.
 
 ## Project Progress & Features
