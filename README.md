@@ -1,50 +1,60 @@
-# Welcome to your Expo app 👋
+# MomCare Expo 👋
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+MomCare addresses the gaps urban Indian mothers face in getting timely, culturally relevant prenatal guidance by combining clinically vetted content, multilingual support, and AI-driven personalization so that busy families receive evidence-based reminders, risk alerts, and wellness tips without relying solely on fragmented online advice.
 
-## Get started
+## Project Progress & Features
 
-1. Install dependencies
+- **Phase 1 – MVP (Complete):** Supabase infrastructure, secure authentication, chat and voice assistants, memory/RAG pipeline, dashboard, and five tracking screens (symptoms, kicks, nutrition, goals, alerts).
+- **Phase 2 – Advanced Features (Complete):** GPT-4o vision image analysis, background job worker, meal logging, posture assessment, image picker, and history surfacing in profile.
+- **Phase 3 – Discovery (Complete):** Explore hub with curated resources, search and filtering, bookmarking, and sharing flows.
+- **Phase 4 – Edge Functions Migration (Complete):** Unified `lib/supabase-api.ts`, Supabase Edge Functions (`chat-handler`, `voice-handler`, `data-api`, `file-upload`), and decommissioned legacy AI utilities.
 
-   ```bash
-   npm install
-   ```
+## Technical Overview
 
-2. Start the app
+### User Flow Diagram
 
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```mermaid
+flowchart TD
+   A[User Launches App] --> B{New or Returning?}
+   B -- New --> C[Onboarding & Profile Setup]
+   B -- Returning --> D[Personalized Dashboard]
+   C --> D
+   D --> E[Tracking Modules]
+   D --> F[AI Assistant Chat/Voice]
+   E --> G[Insights & Reminders]
+   F --> G
+   G --> H[Risk Alerts & Care Recommendations]
+   H --> I[Doctor Referral & Follow-up]
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+### System Architecture Diagram
 
-## Learn more
+```mermaid
+flowchart LR
+   Client[Expo Mobile Client] -->|Auth & Session| SupabaseAuth[Supabase Auth]
+   Client -->|API Calls| EdgeFns[Supabase Edge Functions]
+   EdgeFns -->|CRUD & RLS| Database[(Postgres + pgvector)]
+   EdgeFns -->|Storage Ops| Storage[[Supabase Storage]]
+   EdgeFns -->|AI Requests| OpenAI[OpenAI GPT-4o Services]
+   EdgeFns -->|Background Jobs| Worker[Background Job Queue]
+   subgraph Security & Observability
+      Logs[Structured Logging]
+      Policies[RLS Policies]
+   end
+   EdgeFns --> Logs
+   Database --> Policies
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+### Upcoming Enhancements
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+- Personalized real-time voice coaching that adapts prompts and tone to the user's trimester, symptoms, and language preferences.
+- Secure upload of medical test reports with embeddings for context-aware conversations between the user and AI assistant.
+- Expanded Edge Function support for ingesting clinical documents and aligning AI responses with physician-approved guidelines.
 
-## Join the community
+## Business Opportunity
 
-Join our community of developers creating universal apps.
+MomCare can evolve into a sustainable digital maternal-care platform by layering premium guidance on top of the core companion experience, giving expectant parents confidence and clinicians actionable touchpoints.
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- Personalized care plans tuned to specific symptoms, medical history, and wellness goals.
+- Location-aware doctor and clinic recommendations with referral or lead fees.
+- Optional telemedicine sessions, partner bundles with hospitals, and sponsored wellness programs.
