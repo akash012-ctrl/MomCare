@@ -20,11 +20,11 @@ flowchart TD
    B -- Returning --> D[Personalized Dashboard]
    C --> D
    D --> E[Tracking Modules]
-   D --> F[AI Assistant Chat/Voice]
+   D --> F[ Personalised AI Assistant Chat/Voice ]
    E --> G[Insights & Reminders]
    F --> G
    G --> H[Risk Alerts & Care Recommendations]
-   H --> I[Doctor Referral & Follow-up]
+   H --> I[Doctor Referral & Follow-up (to be done)]
 ```
 
 ### System Architecture Diagram
