@@ -15,72 +15,16 @@ MomCare addresses the gaps urban Indian mothers face in getting timely, cultural
 
 ```mermaid
 flowchart TD
-   subgraph Access
-      A[App Launch] --> B{Authenticated?}
-      B -- No --> C[Signup / Login]
-      C --> D[Create Secure Session]
-      B -- Yes --> E[Resume Session]
-      D --> E
-   end
-
-   subgraph Onboarding
-      E --> F{Profile Complete?}
-      F -- No --> G[Capture Pregnancy Timeline]
-      G --> H[Collect Health History & Preferences]
-      H --> I[Set Language & Notification Opt-ins]
-      I --> J[Sync with Supabase Profile]
-      F -- Yes --> J
-   end
-
-   subgraph Daily Hub
-      J --> K[Personalized Home Dashboard]
-      K --> L[Symptom & Vital Logging]
-      K --> M[Kick Counter & Movement Alerts]
-      K --> N[Nutrition & Goals Tracking]
-      K --> O[Image Analysis Workflows]
-      O --> P[Upload Meal/Posture Photo]
-      P --> Q[Edge Function Analysis]
-      Q --> R[Insights Stored & Displayed]
-   end
-
-   subgraph Conversational Support
-      K --> S[AI Assistant Entry]
-      S --> T{Voice or Text?}
-      T -- Text --> U[Chat Interface]
-      T -- Voice --> V[Real-time Voice Session]
-      U --> W[Context Retrieval from Supabase]
-      V --> W
-      W --> X[Generate Response via GPT-4o]
-      X --> Y[Deliver Guidance, Tasks, Reassurance]
-   end
-
-   subgraph Proactive Intelligence
-      R --> Z[Personalized Reminders]
-      Y --> Z
-      L --> AA[Anomaly Detection]
-      M --> AA
-      N --> AA
-      AA --> AB{Risk Level}
-      AB -- Medium --> AC[Suggest Lifestyle & Follow-up]
-      AB -- High --> AD[Escalate to Urgent Alert]
-   end
-
-   subgraph Care Continuity
-      AD --> AE[Doctor Recommendation by Location]
-      AE --> AF[Schedule Consultation / Telemedicine]
-      AC --> AG[Add Tasks to Checklist]
-      AF --> AG
-      AG --> AH[Track Completion & Update Plan]
-      AH --> K
-   end
-
-   subgraph Learning Loop
-      UserArtifacts[Test Reports, Journal Entries] --> AI[Document Upload Flow]
-      AI --> AJ[Embed & Index for Context]
-      AJ --> W
-      AJ --> AK[Clinical History Timeline]
-      AK --> K
-   end
+   A[User Launches App] --> B{New or Returning?}
+   B -- New --> C[Onboarding & Profile Setup]
+   B -- Returning --> D[Personalized Dashboard]
+   C --> D
+   D --> E[Tracking Modules]
+   D --> F[AI Assistant Chat/Voice]
+   E --> G[Insights & Reminders]
+   F --> G
+   G --> H[Risk Alerts & Care Recommendations]
+   H --> I[Doctor Referral & Follow-up]
 ```
 
 ### System Architecture Diagram
