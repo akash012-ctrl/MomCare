@@ -14,15 +14,15 @@
                 "buildType": "apk"
             },
             "env": {
-                "EXPO_PUBLIC_SUPABASE_URL": "https://czozjpgwkbudduyjusxg.supabase.co",
-                "EXPO_PUBLIC_SUPABASE_KEY": "sb_publishable_Ni2Z5NdY4fy6DbRX4ZiBdA_7HKaLqPN"
+                "EXPO_PUBLIC_SUPABASE_URL": "edit",
+                "EXPO_PUBLIC_SUPABASE_KEY": "edit"
             }
         },
         "production": {
             "autoIncrement": true,
             "env": {
-                "EXPO_PUBLIC_SUPABASE_URL": "https://czozjpgwkbudduyjusxg.supabase.co",
-                "EXPO_PUBLIC_SUPABASE_KEY": "sb_publishable_Ni2Z5NdY4fy6DbRX4ZiBdA_7HKaLqPN"
+                "EXPO_PUBLIC_SUPABASE_URL": "edit",
+                "EXPO_PUBLIC_SUPABASE_KEY": "edit"
             }
         }
     },
