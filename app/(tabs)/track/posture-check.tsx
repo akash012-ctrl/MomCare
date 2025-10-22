@@ -1,4 +1,5 @@
 import { ImagePicker } from "@/components/image-picker";
+import { useAppAlert } from "@/components/ui/app-alert";
 import { useImageAnalysis } from "@/hooks/use-image-analysis";
 import { useThemeColor } from "@/hooks/use-theme-color";
 import { PostureAnalysisResult } from "@/lib/image-analysis-types";
@@ -7,7 +8,6 @@ import { LinearGradient } from "expo-linear-gradient";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   ScrollView,
   StyleSheet,
   Text,
@@ -20,6 +20,7 @@ export default function PostureCheckScreen(): React.ReactElement {
   const insets = useSafeAreaInsets();
   const backgroundColor = useThemeColor({}, "background");
   const textColor = useThemeColor({}, "text");
+  const { showAlert } = useAppAlert();
 
   const imageAnalysis = useImageAnalysis();
   const { loading, success, error, result } = imageAnalysis;
@@ -40,16 +41,22 @@ export default function PostureCheckScreen(): React.ReactElement {
         height
       );
     } catch (err) {
-      Alert.alert(
-        "Error",
-        err instanceof Error ? err.message : "Failed to analyze posture"
-      );
+      showAlert({
+        title: "Error",
+        message:
+          err instanceof Error ? err.message : "Failed to analyze posture",
+        type: "error",
+      });
     }
   };
 
   const handleSavePosture = async () => {
     if (!result) {
-      Alert.alert("Error", "No posture analysis result available");
+      showAlert({
+        title: "Missing data",
+        message: "No posture analysis result available",
+        type: "warning",
+      });
       return;
     }
 
@@ -60,19 +67,27 @@ export default function PostureCheckScreen(): React.ReactElement {
       // No additional job creation needed.
 
       // Show confirmation
-      Alert.alert("Success", "Posture check recorded successfully!", [
-        {
-          text: "OK",
-          onPress: () => {
-            imageAnalysis.reset?.();
+      showAlert({
+        title: "Posture recorded",
+        message: "Posture check saved successfully!",
+        type: "success",
+        actions: [
+          {
+            text: "OK",
+            tone: "primary",
+            onPress: () => {
+              imageAnalysis.reset?.();
+            },
           },
-        },
-      ]);
+        ],
+      });
     } catch (err) {
-      Alert.alert(
-        "Error",
-        err instanceof Error ? err.message : "Failed to save posture check"
-      );
+      showAlert({
+        title: "Error",
+        message:
+          err instanceof Error ? err.message : "Failed to save posture check",
+        type: "error",
+      });
     } finally {
       setSubmitting(false);
     }

@@ -3,7 +3,6 @@ import { useRouter } from "expo-router";
 import { MotiView } from "moti";
 import { useCallback, useEffect, useState } from "react";
 import {
-  Alert,
   FlatList,
   Pressable,
   RefreshControl,
@@ -13,6 +12,7 @@ import {
   View,
 } from "react-native";
 
+import { useAppAlert } from "@/components/ui/app-alert";
 import { MotherhoodTheme } from "@/constants/theme";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/lib/supabase";
@@ -46,6 +46,7 @@ const PRIORITY_CONFIG: Record<
 export default function Alerts() {
   const router = useRouter();
   const { user } = useAuth();
+  const { showAlert } = useAppAlert();
   const [refreshing, setRefreshing] = useState(false);
 
   const [unreadAlerts, setUnreadAlerts] = useState<HealthAlert[]>([]);
@@ -71,9 +72,13 @@ export default function Alerts() {
       }
     } catch (error) {
       console.error("Error loading alerts:", error);
-      Alert.alert("Error", "Failed to load alerts");
+      showAlert({
+        title: "Error",
+        message: "Failed to load alerts",
+        type: "error",
+      });
     }
-  }, [user?.id]);
+  }, [user?.id, showAlert]);
 
   useEffect(() => {
     loadAlerts();
@@ -97,10 +102,14 @@ export default function Alerts() {
         await loadAlerts();
       } catch (error) {
         console.error("Error marking alert as read:", error);
-        Alert.alert("Error", "Failed to update alert");
+        showAlert({
+          title: "Error",
+          message: "Failed to update alert",
+          type: "error",
+        });
       }
     },
-    [loadAlerts]
+    [loadAlerts, showAlert]
   );
 
   const dismissAlert = useCallback(
@@ -115,10 +124,14 @@ export default function Alerts() {
         await loadAlerts();
       } catch (error) {
         console.error("Error dismissing alert:", error);
-        Alert.alert("Error", "Failed to dismiss alert");
+        showAlert({
+          title: "Error",
+          message: "Failed to dismiss alert",
+          type: "error",
+        });
       }
     },
-    [loadAlerts]
+    [loadAlerts, showAlert]
   );
 
   const renderAlert = ({ item }: { item: HealthAlert }) => {
@@ -180,10 +193,19 @@ export default function Alerts() {
           <Pressable
             style={styles.dismissButton}
             onPress={() => {
-              Alert.alert("Dismiss Alert", "Are you sure?", [
-                { text: "Cancel" },
-                { text: "Dismiss", onPress: () => dismissAlert(item.id) },
-              ]);
+              showAlert({
+                title: "Dismiss Alert",
+                message: "Are you sure?",
+                type: "warning",
+                actions: [
+                  { text: "Cancel", tone: "secondary" },
+                  {
+                    text: "Dismiss",
+                    tone: "danger",
+                    onPress: () => dismissAlert(item.id),
+                  },
+                ],
+              });
             }}
           >
             <Feather name="x" size={20} color={colors.textSecondary} />

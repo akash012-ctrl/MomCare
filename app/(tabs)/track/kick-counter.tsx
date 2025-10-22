@@ -1,3 +1,4 @@
+import { useAppAlert } from "@/components/ui/app-alert";
 import { CircleIconButton } from "@/components/ui/circle-icon-button";
 import { StatCard } from "@/components/ui/stat-card";
 import { MotherhoodTheme } from "@/constants/theme";
@@ -8,7 +9,6 @@ import { useRouter } from "expo-router";
 import { MotiView } from "moti";
 import { useCallback, useEffect, useState } from "react";
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -18,7 +18,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  View
+  View,
 } from "react-native";
 
 const { colors, radii, spacing, typography } = MotherhoodTheme;
@@ -63,6 +63,7 @@ const TIME_PERIODS = [
 export default function KickCounter() {
   const router = useRouter();
   const { user } = useAuth();
+  const { showAlert } = useAppAlert();
   const [refreshing, setRefreshing] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState<TimeOfDay>("morning");
   const [currentCount, setCurrentCount] = useState(0);
@@ -133,35 +134,41 @@ export default function KickCounter() {
     if (!user?.id) return;
     const newCount = currentCount + 1;
     setCurrentCount(newCount);
-  }, [user?.id, currentCount, selectedPeriod, notes]);
+  }, [user?.id, currentCount]);
 
   const decrementKicks = useCallback(async () => {
     if (!user?.id || currentCount <= 0) return;
     const newCount = currentCount - 1;
     setCurrentCount(newCount);
-  }, [user?.id, currentCount, selectedPeriod, notes]);
+  }, [user?.id, currentCount]);
 
   const saveNotes = useCallback(async () => {
     if (!user?.id) return;
     try {
       const today = new Date().toISOString().split("T")[0];
-      await supabase
-        .from("kick_counts")
-        .upsert({
-          user_id: user.id,
-          date: today,
-          time_of_day: selectedPeriod,
-          count: currentCount,
-          notes: notes || null,
-        });
-      Alert.alert("Success", "Notes saved!");
+      await supabase.from("kick_counts").upsert({
+        user_id: user.id,
+        date: today,
+        time_of_day: selectedPeriod,
+        count: currentCount,
+        notes: notes || null,
+      });
+      showAlert({
+        title: "Saved",
+        message: "Your kick counter notes are updated",
+        type: "success",
+      });
       // Reset the log after saving
       setCurrentCount(0);
       setNotes("");
     } catch {
-      Alert.alert("Error", "Failed to save notes");
+      showAlert({
+        title: "Error",
+        message: "Failed to save notes",
+        type: "error",
+      });
     }
-  }, [user?.id, selectedPeriod, currentCount, notes]);
+  }, [user?.id, selectedPeriod, currentCount, notes, showAlert]);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -231,7 +238,8 @@ export default function KickCounter() {
                   <Text
                     style={[
                       styles.periodLabel,
-                      selectedPeriod === period.value && styles.periodLabelActive,
+                      selectedPeriod === period.value &&
+                        styles.periodLabelActive,
                     ]}
                   >
                     {period.label}

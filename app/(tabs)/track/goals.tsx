@@ -3,7 +3,6 @@ import { useRouter } from "expo-router";
 import { MotiView } from "moti";
 import { useCallback, useEffect, useState } from "react";
 import {
-  Alert,
   FlatList,
   Modal,
   Pressable,
@@ -15,6 +14,7 @@ import {
   View,
 } from "react-native";
 
+import { useAppAlert } from "@/components/ui/app-alert";
 import { CircleIconButton } from "@/components/ui/circle-icon-button";
 import { ProgressPill } from "@/components/ui/progress-pill";
 import { MotherhoodTheme } from "@/constants/theme";
@@ -50,6 +50,7 @@ const GOAL_CATEGORIES = [
 export default function Goals() {
   const router = useRouter();
   const { user } = useAuth();
+  const { showAlert } = useAppAlert();
   const [refreshing, setRefreshing] = useState(false);
 
   // Modal state
@@ -84,9 +85,13 @@ export default function Goals() {
       }
     } catch (error) {
       console.error("Error loading goals:", error);
-      Alert.alert("Error", "Failed to load goals");
+      showAlert({
+        title: "Error",
+        message: "Failed to load goals",
+        type: "error",
+      });
     }
-  }, [user?.id]);
+  }, [user?.id, showAlert]);
 
   useEffect(() => {
     loadGoals();
@@ -100,7 +105,11 @@ export default function Goals() {
 
   const handleCreateGoal = useCallback(async () => {
     if (!user?.id || !title.trim()) {
-      Alert.alert("Error", "Please enter a goal title");
+      showAlert({
+        title: "Missing title",
+        message: "Please enter a goal title",
+        type: "warning",
+      });
       return;
     }
 
@@ -124,12 +133,29 @@ export default function Goals() {
       setTargetValue("10");
       setUnit("times");
       await loadGoals();
-      Alert.alert("Success", "Goal created!");
+      showAlert({
+        title: "Goal created",
+        message: "Your new goal is ready to track",
+        type: "success",
+      });
     } catch (error) {
       console.error("Error creating goal:", error);
-      Alert.alert("Error", "Failed to create goal");
+      showAlert({
+        title: "Error",
+        message: "Failed to create goal",
+        type: "error",
+      });
     }
-  }, [user?.id, title, description, category, targetValue, unit, loadGoals]);
+  }, [
+    user?.id,
+    title,
+    description,
+    category,
+    targetValue,
+    unit,
+    loadGoals,
+    showAlert,
+  ]);
 
   const incrementProgress = useCallback(
     async (goal: Goal) => {
@@ -147,14 +173,22 @@ export default function Goals() {
         await loadGoals();
 
         if (newStatus === "completed") {
-          Alert.alert("🎉 Congratulations!", "You've completed your goal!");
+          showAlert({
+            title: "🎉 Congratulations!",
+            message: "You've completed your goal!",
+            type: "success",
+          });
         }
       } catch (error) {
         console.error("Error updating goal:", error);
-        Alert.alert("Error", "Failed to update goal");
+        showAlert({
+          title: "Error",
+          message: "Failed to update goal",
+          type: "error",
+        });
       }
     },
-    [loadGoals]
+    [loadGoals, showAlert]
   );
 
   const decrementProgress = useCallback(
@@ -174,10 +208,14 @@ export default function Goals() {
         await loadGoals();
       } catch (error) {
         console.error("Error updating goal:", error);
-        Alert.alert("Error", "Failed to update goal");
+        showAlert({
+          title: "Error",
+          message: "Failed to update goal",
+          type: "error",
+        });
       }
     },
-    [loadGoals]
+    [loadGoals, showAlert]
   );
 
   const deleteGoal = useCallback(
@@ -191,10 +229,14 @@ export default function Goals() {
         await loadGoals();
       } catch (error) {
         console.error("Error deleting goal:", error);
-        Alert.alert("Error", "Failed to delete goal");
+        showAlert({
+          title: "Error",
+          message: "Failed to delete goal",
+          type: "error",
+        });
       }
     },
-    [loadGoals]
+    [loadGoals, showAlert]
   );
 
   const renderGoalCard = ({ item }: { item: Goal }) => {
@@ -249,10 +291,19 @@ export default function Goals() {
             <Pressable
               style={styles.deleteButton}
               onPress={() => {
-                Alert.alert("Delete Goal", "Are you sure?", [
-                  { text: "Cancel" },
-                  { text: "Delete", onPress: () => deleteGoal(item.id) },
-                ]);
+                showAlert({
+                  title: "Delete Goal",
+                  message: "Are you sure you want to remove this goal?",
+                  type: "warning",
+                  actions: [
+                    { text: "Cancel", tone: "secondary" },
+                    {
+                      text: "Delete",
+                      tone: "danger",
+                      onPress: () => deleteGoal(item.id),
+                    },
+                  ],
+                });
               }}
             >
               <Feather name="trash-2" size={20} color={colors.danger} />

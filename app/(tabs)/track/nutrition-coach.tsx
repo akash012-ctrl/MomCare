@@ -3,7 +3,6 @@ import { useRouter } from "expo-router";
 import { MotiView } from "moti";
 import { useCallback, useEffect, useState } from "react";
 import {
-  Alert,
   Pressable,
   RefreshControl,
   SafeAreaView,
@@ -13,6 +12,7 @@ import {
   View,
 } from "react-native";
 
+import { useAppAlert } from "@/components/ui/app-alert";
 import { ProgressPill } from "@/components/ui/progress-pill";
 import { RoundedCard } from "@/components/ui/rounded-card";
 import { MotherhoodTheme } from "@/constants/theme";
@@ -83,6 +83,7 @@ const ESSENTIAL_NUTRIENTS = [
 export default function NutritionCoach() {
   const router = useRouter();
   const { user } = useAuth();
+  const { showAlert } = useAppAlert();
   const [refreshing, setRefreshing] = useState(false);
 
   const [requirements, setRequirements] =
@@ -151,9 +152,13 @@ export default function NutritionCoach() {
       }
     } catch (error) {
       console.error("Error loading nutrition data:", error);
-      Alert.alert("Error", "Failed to load nutrition data");
+      showAlert({
+        title: "Error",
+        message: "Failed to load nutrition data",
+        type: "error",
+      });
     }
-  }, [user?.id]);
+  }, [user?.id, showAlert]);
 
   useEffect(() => {
     loadNutritionData();
@@ -185,7 +190,9 @@ export default function NutritionCoach() {
               <Feather name="arrow-left" size={24} color={colors.textPrimary} />
             </Pressable>
             <Text style={styles.headerTitle}>Nutrition Coach</Text>
-            <Text style={styles.tipsBody}>Meal Logging feature is in progress. there might be some error</Text>
+            <Text style={styles.tipsBody}>
+              Meal Logging feature is in progress. there might be some error
+            </Text>
             <View style={{ width: 24 }} />
           </View>
         </View>
@@ -223,14 +230,14 @@ export default function NutritionCoach() {
                 nutrient.key === "calories_extra"
                   ? todayIntake.calories
                   : nutrient.key === "protein_g"
-                    ? todayIntake.protein_g
-                    : nutrient.key === "iron_mg"
-                      ? todayIntake.iron_mg
-                      : nutrient.key === "calcium_mg"
-                        ? todayIntake.calcium_mg
-                        : nutrient.key === "folic_acid_mcg"
-                          ? todayIntake.folic_acid_mcg
-                          : todayIntake.water_ml;
+                  ? todayIntake.protein_g
+                  : nutrient.key === "iron_mg"
+                  ? todayIntake.iron_mg
+                  : nutrient.key === "calcium_mg"
+                  ? todayIntake.calcium_mg
+                  : nutrient.key === "folic_acid_mcg"
+                  ? todayIntake.folic_acid_mcg
+                  : todayIntake.water_ml;
 
               return (
                 <MotiView

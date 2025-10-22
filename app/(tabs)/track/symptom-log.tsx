@@ -3,7 +3,6 @@ import { useRouter } from "expo-router";
 import { MotiView } from "moti";
 import { useCallback, useEffect, useState } from "react";
 import {
-  Alert,
   FlatList,
   Modal,
   Pressable,
@@ -15,6 +14,7 @@ import {
   View,
 } from "react-native";
 
+import { useAppAlert } from "@/components/ui/app-alert";
 import { MotherhoodTheme } from "@/constants/theme";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/lib/supabase";
@@ -51,6 +51,7 @@ const SEVERITY_LEVELS = [
 export default function SymptomLog() {
   const router = useRouter();
   const { user } = useAuth();
+  const { showAlert } = useAppAlert();
   const [refreshing, setRefreshing] = useState(false);
 
   // Modal state
@@ -77,9 +78,13 @@ export default function SymptomLog() {
       if (data) setSymptoms(data);
     } catch (error) {
       console.error("Error loading symptoms:", error);
-      Alert.alert("Error", "Failed to load symptoms");
+      showAlert({
+        title: "Error",
+        message: "Failed to load symptoms",
+        type: "error",
+      });
     }
-  }, [user?.id]);
+  }, [user?.id, showAlert]);
 
   useEffect(() => {
     loadSymptoms();
@@ -114,12 +119,27 @@ export default function SymptomLog() {
 
       setModalVisible(false);
       await loadSymptoms();
-      Alert.alert("Success", "Symptom logged!");
+      showAlert({
+        title: "Logged",
+        message: "Symptom saved successfully",
+        type: "success",
+      });
     } catch (error) {
       console.error("Error saving symptom:", error);
-      Alert.alert("Error", "Failed to save symptom");
+      showAlert({
+        title: "Error",
+        message: "Failed to save symptom",
+        type: "error",
+      });
     }
-  }, [user?.id, selectedSymptom, selectedSeverity, notes, loadSymptoms]);
+  }, [
+    user?.id,
+    selectedSymptom,
+    selectedSeverity,
+    notes,
+    loadSymptoms,
+    showAlert,
+  ]);
 
   const renderSymptomCard = ({ item }: { item: Symptom }) => {
     const symptomInfo = COMMON_SYMPTOMS.find(

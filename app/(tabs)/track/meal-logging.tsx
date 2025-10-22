@@ -1,4 +1,5 @@
 import { ImagePicker } from "@/components/image-picker";
+import { useAppAlert } from "@/components/ui/app-alert";
 import { useImageAnalysis } from "@/hooks/use-image-analysis";
 import { useThemeColor } from "@/hooks/use-theme-color";
 import { MealAnalysisResult } from "@/lib/image-analysis-types";
@@ -7,7 +8,6 @@ import { LinearGradient } from "expo-linear-gradient";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   ScrollView,
   StyleSheet,
   Text,
@@ -21,6 +21,7 @@ export default function MealLoggingScreen(): React.ReactElement {
   const insets = useSafeAreaInsets();
   const backgroundColor = useThemeColor({}, "background");
   const textColor = useThemeColor({}, "text");
+  const { showAlert } = useAppAlert();
 
   const imageAnalysis = useImageAnalysis();
   const { loading, success, error, result } = imageAnalysis;
@@ -36,16 +37,21 @@ export default function MealLoggingScreen(): React.ReactElement {
     try {
       await imageAnalysis.analyzeImage(base64, mimeType, "meal", width, height);
     } catch (err) {
-      Alert.alert(
-        "Error",
-        err instanceof Error ? err.message : "Failed to analyze meal"
-      );
+      showAlert({
+        title: "Error",
+        message: err instanceof Error ? err.message : "Failed to analyze meal",
+        type: "error",
+      });
     }
   };
 
   const handleSaveMeal = async () => {
     if (!result) {
-      Alert.alert("Error", "No meal analysis result available");
+      showAlert({
+        title: "Missing data",
+        message: "No meal analysis result available",
+        type: "warning",
+      });
       return;
     }
 
@@ -56,19 +62,26 @@ export default function MealLoggingScreen(): React.ReactElement {
       // No additional job creation needed.
 
       // Show confirmation
-      Alert.alert("Success", "Meal logged successfully!", [
-        {
-          text: "OK",
-          onPress: () => {
-            setMealNotes("");
+      showAlert({
+        title: "Meal saved",
+        message: "Meal logged successfully!",
+        type: "success",
+        actions: [
+          {
+            text: "OK",
+            tone: "primary",
+            onPress: () => {
+              setMealNotes("");
+            },
           },
-        },
-      ]);
+        ],
+      });
     } catch (err) {
-      Alert.alert(
-        "Error",
-        err instanceof Error ? err.message : "Failed to save meal"
-      );
+      showAlert({
+        title: "Error",
+        message: err instanceof Error ? err.message : "Failed to save meal",
+        type: "error",
+      });
     } finally {
       setSubmitting(false);
     }

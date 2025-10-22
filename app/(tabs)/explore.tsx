@@ -4,7 +4,6 @@ import { useFocusEffect } from "@react-navigation/native";
 import React, { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   Linking,
   Share,
@@ -16,6 +15,7 @@ import {
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { useAppAlert } from "@/components/ui/app-alert";
 import { RoundedCard } from "@/components/ui/rounded-card";
 import { MotherhoodTheme } from "@/constants/theme";
 import { supabase } from "@/lib/supabase";
@@ -178,6 +178,7 @@ const CategoryChip: React.FC<CategoryChipProps> = ({
 };
 
 export default function ExploreScreen() {
+  const { showAlert } = useAppAlert();
   const [activeTab, setActiveTab] = useState("resources");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
@@ -206,11 +207,15 @@ export default function ExploreScreen() {
       }
     } catch (error) {
       console.error("Error loading articles and tips:", error);
-      Alert.alert("Error", "Failed to load content");
+      showAlert({
+        title: "Error",
+        message: "Failed to load content",
+        type: "error",
+      });
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [showAlert]);
 
   // Load saved bookmarks on focus
   useFocusEffect(
@@ -242,10 +247,14 @@ export default function ExploreScreen() {
         await AsyncStorage.setItem(BOOKMARKS_KEY, JSON.stringify(updatedSaved));
       } catch (error) {
         console.error("Error saving bookmark:", error);
-        Alert.alert("Error", "Failed to save bookmark");
+        showAlert({
+          title: "Error",
+          message: "Failed to save bookmark",
+          type: "error",
+        });
       }
     },
-    [savedArticles]
+    [savedArticles, showAlert]
   );
 
   const handleShareArticle = useCallback(async (article: Article) => {
@@ -261,24 +270,39 @@ export default function ExploreScreen() {
     }
   }, []);
 
-  const handleOpenLink = useCallback(async (url?: string) => {
-    if (!url) {
-      Alert.alert("Notice", "This article does not have an external link.");
-      return;
-    }
-
-    try {
-      const supported = await Linking.canOpenURL(url);
-      if (supported) {
-        await Linking.openURL(url);
-      } else {
-        Alert.alert("Error", `Cannot open URL: ${url}`);
+  const handleOpenLink = useCallback(
+    async (url?: string) => {
+      if (!url) {
+        showAlert({
+          title: "Heads up",
+          message: "This article does not have an external link.",
+          type: "info",
+        });
+        return;
       }
-    } catch (error) {
-      console.error("Error opening link:", error);
-      Alert.alert("Error", "Failed to open link");
-    }
-  }, []);
+
+      try {
+        const supported = await Linking.canOpenURL(url);
+        if (supported) {
+          await Linking.openURL(url);
+        } else {
+          showAlert({
+            title: "Error",
+            message: `Cannot open URL: ${url}`,
+            type: "error",
+          });
+        }
+      } catch (error) {
+        console.error("Error opening link:", error);
+        showAlert({
+          title: "Error",
+          message: "Failed to open link",
+          type: "error",
+        });
+      }
+    },
+    [showAlert]
+  );
 
   // Filter articles based on tab, category, and search query
   const filteredArticles = useMemo(() => {

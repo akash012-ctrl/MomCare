@@ -1,10 +1,10 @@
+import { useAppAlert } from "@/components/ui/app-alert";
 import { useThemeColor } from "@/hooks/use-theme-color";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePickerLib from "expo-image-picker";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Image,
   Modal,
   StyleSheet,
@@ -45,6 +45,7 @@ export const ImagePicker: React.FC<ImagePickerProps> = ({
   allowCamera = true,
   allowGallery = true,
 }) => {
+  const { showAlert } = useAppAlert();
   const [selectedImage, setSelectedImage] = useState<PickedImage | null>(null);
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
@@ -134,7 +135,11 @@ export const ImagePicker: React.FC<ImagePickerProps> = ({
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error";
       onError?.(errorMessage);
-      Alert.alert("Error", errorMessage);
+      showAlert({
+        title: "Error",
+        message: errorMessage,
+        type: "error",
+      });
       return null;
     } finally {
       setLoading(false);
@@ -157,7 +162,11 @@ export const ImagePicker: React.FC<ImagePickerProps> = ({
         const errorMessage =
           error instanceof Error ? error.message : "Upload failed";
         onError?.(errorMessage);
-        Alert.alert("Error", errorMessage);
+        showAlert({
+          title: "Error",
+          message: errorMessage,
+          type: "error",
+        });
       }
     }
   };
@@ -178,7 +187,11 @@ export const ImagePicker: React.FC<ImagePickerProps> = ({
         const errorMessage =
           error instanceof Error ? error.message : "Upload failed";
         onError?.(errorMessage);
-        Alert.alert("Error", errorMessage);
+        showAlert({
+          title: "Error",
+          message: errorMessage,
+          type: "error",
+        });
       }
     }
   };
