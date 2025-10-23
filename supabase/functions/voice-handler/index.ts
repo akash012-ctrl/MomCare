@@ -1,262 +1,30 @@
+// @ts-nocheck
 /**
- * Voice Handler Edge Function
- * Handles speech-to-text transcription and text-to-speech synthesis
+ * Voice handler has been decommissioned. Clients must use the realtime-token
+ * Edge Function to obtain WebRTC credentials for voice interactions.
  */
 
-import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-
-const CORS_HEADERS = {
+const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
 
-interface TranscribeRequest {
-    audioBase64: string;
-    userId: string;
-    conversationId?: string;
-}
-
-interface SpeakRequest {
-    text: string;
-    userId: string;
-}
-
-async function transcribeAudio(
-    audioBase64: string
-): Promise<{ text: string; language: string }> {
-    const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
-    if (!openaiApiKey) throw new Error("OPENAI_API_KEY not configured");
-
-    const binaryString = atob(audioBase64);
-    const bytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
+Deno.serve((req: Request): Response => {
+    if (req.method === "OPTIONS") {
+        return new Response(null, { headers: corsHeaders });
     }
 
-    const formData = new FormData();
-    formData.append("file", new Blob([bytes], { type: "audio/mp4" }), "audio.mp4");
-    formData.append("model", "whisper-1");
-    formData.append("language", "en");
-
-    const response = await fetch(
-        "https://api.openai.com/v1/audio/transcriptions",
+    return new Response(
+        JSON.stringify({
+            error: "Voice handler endpoint removed. Use realtime-token for WebRTC voice sessions.",
+        }),
         {
-            method: "POST",
+            status: 410,
             headers: {
-                Authorization: `Bearer ${openaiApiKey}`,
+                ...corsHeaders,
+                "Content-Type": "application/json",
             },
-            body: formData,
         }
     );
-
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(`Transcription API error: ${JSON.stringify(error)}`);
-    }
-
-    const data = await response.json();
-    return {
-        text: data.text,
-        language: data.language,
-    };
-}
-
-async function generateSpeech(text: string): Promise<ArrayBuffer> {
-    const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
-    if (!openaiApiKey) throw new Error("OPENAI_API_KEY not configured");
-
-    const response = await fetch("https://api.openai.com/v1/audio/speech", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${openaiApiKey}`,
-        },
-        body: JSON.stringify({
-            model: "tts-1",
-            input: text,
-            voice: "nova",
-            speed: 1,
-        }),
-    });
-
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(`TTS API error: ${JSON.stringify(error)}`);
-    }
-
-    return response.arrayBuffer();
-}
-
-async function generateEphemeralToken(
-    userId: string,
-    model?: string,
-    voice?: string,
-    instructions?: string
-): Promise<{ client_secret: string; expires_at: number }> {
-    const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
-    if (!openaiApiKey) throw new Error("OPENAI_API_KEY not configured");
-
-    const defaultInstructions = instructions || `You are a helpful and caring pregnancy assistant for MomCare app. You provide evidence-based guidance on pregnancy, nutrition, health, and wellness. Be warm, empathetic, and supportive. Always encourage users to consult healthcare providers for medical concerns. User ID: ${userId}`;
-
-    const response = await fetch("https://api.openai.com/v1/realtime/sessions", {
-        method: "POST",
-        headers: {
-            "Authorization": `Bearer ${openaiApiKey}`,
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-            model: model || "gpt-4o-realtime-preview-2024-12-17",
-            voice: voice || "alloy",
-            instructions: defaultInstructions,
-            turn_detection: {
-                type: "server_vad",
-                threshold: 0.5,
-                prefix_padding_ms: 300,
-                silence_duration_ms: 500,
-            },
-            input_audio_format: "pcm16",
-            output_audio_format: "pcm16",
-            input_audio_transcription: { model: "whisper-1" },
-            temperature: 0.7,
-            max_response_output_tokens: 4096,
-        }),
-    });
-
-    if (!response.ok) {
-        const error = await response.text();
-        throw new Error(`Failed to generate ephemeral token: ${error}`);
-    }
-
-    const data = await response.json();
-    return {
-        client_secret: data.client_secret.value,
-        expires_at: data.client_secret.expires_at,
-    };
-}
-
-Deno.serve(async (req) => {
-    if (req.method === "OPTIONS") {
-        return new Response("ok", {
-            headers: CORS_HEADERS,
-        });
-    }
-
-    try {
-        const url = new URL(req.url);
-        const action = url.searchParams.get("action");
-
-        if (action === "ephemeral") {
-            const body = await req.json();
-            const { userId, model, voice, instructions } = body;
-
-            if (!userId) {
-                return new Response(
-                    JSON.stringify({ error: "Missing required field: userId" }),
-                    {
-                        status: 400,
-                        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-                    }
-                );
-            }
-
-            const tokenData = await generateEphemeralToken(userId, model, voice, instructions);
-
-            return new Response(
-                JSON.stringify({
-                    success: true,
-                    client_secret: tokenData.client_secret,
-                    expires_at: tokenData.expires_at,
-                    model: model || "gpt-4o-realtime-preview-2024-12-17",
-                    voice: voice || "alloy",
-                }),
-                {
-                    headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-                }
-            );
-        } else if (action === "transcribe") {
-            const body = (await req.json()) as TranscribeRequest;
-            const { audioBase64, userId, conversationId } = body;
-
-            if (!audioBase64 || !userId) {
-                return new Response(
-                    JSON.stringify({
-                        error: "Missing required fields: audioBase64, userId",
-                    }),
-                    {
-                        status: 400,
-                        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-                    }
-                );
-            }
-
-            const { text, language } = await transcribeAudio(audioBase64);
-
-            return new Response(
-                JSON.stringify({
-                    success: true,
-                    text,
-                    language,
-                    timestamp: new Date().toISOString(),
-                }),
-                {
-                    headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-                }
-            );
-        } else if (action === "speak") {
-            const body = (await req.json()) as SpeakRequest;
-            const { text, userId } = body;
-
-            if (!text || !userId) {
-                return new Response(
-                    JSON.stringify({
-                        error: "Missing required fields: text, userId",
-                    }),
-                    {
-                        status: 400,
-                        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-                    }
-                );
-            }
-
-            const audioBuffer = await generateSpeech(text);
-            const base64Audio = btoa(
-                String.fromCharCode.apply(null, Array.from(new Uint8Array(audioBuffer)))
-            );
-
-            return new Response(
-                JSON.stringify({
-                    success: true,
-                    audioBase64: base64Audio,
-                    mimeType: "audio/mp3",
-                    timestamp: new Date().toISOString(),
-                }),
-                {
-                    headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-                }
-            );
-        } else {
-            return new Response(
-                JSON.stringify({
-                    error: "Invalid action. Use ?action=ephemeral, ?action=transcribe or ?action=speak",
-                }),
-                {
-                    status: 400,
-                    headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-                }
-            );
-        }
-    } catch (error) {
-        console.error("Voice handler error:", error);
-        return new Response(
-            JSON.stringify({
-                error: "Voice processing failed",
-                details: error instanceof Error ? error.message : "Unknown error",
-            }),
-            {
-                status: 500,
-                headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-            }
-        );
-    }
 });

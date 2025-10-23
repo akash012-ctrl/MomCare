@@ -14,15 +14,19 @@ import {
 } from "react-native";
 import Markdown from "react-native-markdown-display";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { RTCView } from "react-native-webrtc";
 
 import { MotherhoodTheme } from "@/constants/theme";
 import { useAuth } from "@/hooks/use-auth";
-import type { ChatMessage } from "@/lib/supabase-api";
+import { useRealtimeVoice } from "@/hooks/use-realtime-voice";
+import type { ChatMessage, UserProfile } from "@/lib/supabase-api";
 import {
   getConversationHistory,
-  getRealtimeToken,
+  getProfile,
   sendChatMessage,
 } from "@/lib/supabase-api";
+
+import type { User } from "@/lib/types";
 
 const { colors, radii, spacing, typography, shadows } = MotherhoodTheme;
 
@@ -290,153 +294,421 @@ function TabSelector({
 }
 
 function VoiceAssistant({
-  userId,
+  user,
   language,
 }: {
-  userId: string;
+  user: User | null;
   language: "en" | "hi";
 }) {
-  const [isConnected, setIsConnected] = useState(false);
-  const [isConnecting, setIsConnecting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileError, setProfileError] = useState<string | null>(null);
+  const transcriptListRef = useRef<FlatList<AssistantMessage>>(null);
 
-  const handleConnect = async () => {
-    setIsConnecting(true);
-    setError(null);
+  React.useEffect(() => {
+    let isMounted = true;
 
-    try {
-      // Get realtime token with language preference
-      const tokenResponse = await getRealtimeToken(language);
-
-      if (!tokenResponse?.client_secret) {
-        throw new Error("Failed to obtain realtime token");
-      }
-
-      // TODO: Initialize WebRTC connection with token
-      // const pc = new RTCPeerConnection();
-      // const dc = pc.createDataChannel("oai-events");
-      // ... WebRTC setup code ...
-
-      // For now, show a placeholder
-      setTimeout(() => {
-        setIsConnected(true);
-        setIsConnecting(false);
-      }, 1500);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to connect");
-      setIsConnecting(false);
+    if (!user?.id) {
+      setProfile(null);
+      setProfileError(null);
+      setProfileLoading(false);
+      return () => {
+        isMounted = false;
+      };
     }
+
+    const hydrateProfile = async () => {
+      try {
+        setProfileLoading(true);
+        const result = await getProfile(user.id);
+        if (!isMounted) return;
+        setProfile(result);
+        setProfileError(null);
+      } catch (err) {
+        console.error("Failed to load profile for voice assistant:", err);
+        if (isMounted) {
+          setProfileError(
+            err instanceof Error
+              ? err.message
+              : "Unable to load personalization data"
+          );
+        }
+      } finally {
+        if (isMounted) {
+          setProfileLoading(false);
+        }
+      }
+    };
+
+    hydrateProfile();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.id]);
+
+  const displayName = useMemo(() => {
+    if (user?.name) {
+      return user.name.split(" ")[0];
+    }
+    return language === "hi" ? "माँ" : "Mom";
+  }, [language, user?.name]);
+
+  const personalizedInstructions = useMemo(() => {
+    const lines: string[] = [
+      "You are MomCare's realtime pregnancy voice companion.",
+      language === "hi"
+        ? "Speak in warm, respectful Hindi that is easy to follow."
+        : "Speak in warm, caring English that is easy to follow.",
+      `Address the user as ${displayName}.`,
+      "Offer empathetic, culturally aware guidance tailored to pregnancy wellbeing.",
+      "Encourage contacting healthcare professionals for urgent or concerning symptoms.",
+    ];
+
+    if (profile?.pregnancy_week) {
+      lines.push(
+        `The user is in pregnancy week ${profile.pregnancy_week}. Weave in tips relevant to this stage.`
+      );
+    }
+
+    if (profile?.trimester) {
+      lines.push(
+        `Focus on trimester ${profile.trimester} needs when suggesting care routines.`
+      );
+    }
+
+    if (profile?.due_date) {
+      lines.push(`Estimated due date: ${profile.due_date}.`);
+    }
+
+    if (profile?.preferences && typeof profile.preferences === "object") {
+      const preferences = profile.preferences as Record<string, unknown>;
+      const preferredTone = preferences.tone;
+      if (typeof preferredTone === "string") {
+        lines.push(`Maintain a ${preferredTone} tone as requested.`);
+      }
+    }
+
+    return lines.join(" ");
+  }, [displayName, language, profile]);
+
+  const {
+    status,
+    transcripts,
+    partialAssistantText,
+    isMuted,
+    isAssistantSpeaking,
+    isUserSpeaking,
+    error: voiceError,
+    sessionDetails,
+    connect,
+    disconnect,
+    toggleMute,
+    remoteStreamUrl,
+  } = useRealtimeVoice({
+    language,
+    instructions: personalizedInstructions,
+  });
+
+  React.useEffect(() => {
+    if (!transcripts.length && !partialAssistantText) {
+      return;
+    }
+    transcriptListRef.current?.scrollToEnd({ animated: true });
+  }, [partialAssistantText, transcripts.length]);
+
+  const voiceMessages = useMemo(() => {
+    const items = transcripts.map((entry) => ({
+      id: entry.id,
+      role: entry.role,
+      content: entry.text,
+      metadata: {
+        timestamp: new Date(entry.timestamp).toISOString(),
+      } as Record<string, unknown>,
+    }));
+
+    if (partialAssistantText.trim().length > 0) {
+      items.push({
+        id: "assistant-live",
+        role: "assistant",
+        content: partialAssistantText,
+        metadata: {
+          timestamp: new Date().toISOString(),
+          live: true,
+        } as Record<string, unknown>,
+      });
+    }
+
+    return items as AssistantMessage[];
+  }, [partialAssistantText, transcripts]);
+
+  const connecting = status === "connecting";
+  const connected = status === "connected";
+  const connectionBadgeLabel = connecting
+    ? "Connecting"
+    : connected
+    ? "Connected"
+    : "Offline";
+  const errorMessage = voiceError ?? profileError;
+  const isActivationActive =
+    connected && (isAssistantSpeaking || isUserSpeaking);
+  const primaryDisabled = connecting || !user?.id;
+  const primaryButtonLabel = connected
+    ? "End Voice Session"
+    : "Start Voice Session";
+  const primaryButtonIcon = connected ? "stop-circle" : "mic";
+
+  const handlePrimaryAction = () => {
+    if (!user?.id) return;
+
+    if (connected) {
+      void disconnect();
+      return;
+    }
+
+    void connect().catch(() => undefined);
   };
 
-  const handleDisconnect = () => {
-    setIsConnected(false);
-    setIsSpeaking(false);
-  };
+  const personalizationSummary = useMemo(() => {
+    if (profileLoading) {
+      return language === "hi"
+        ? "आपकी प्रोफ़ाइल लोड हो रही है..."
+        : "Loading your profile details...";
+    }
+
+    if (!profile) {
+      return language === "hi"
+        ? "हम आपके अनुभव को व्यक्तिगत बनाने के लिए प्रोफ़ाइल बनाए रखते हैं।"
+        : "We use your pregnancy profile to personalise every session.";
+    }
+
+    const facts: string[] = [];
+    if (profile.pregnancy_week) {
+      facts.push(`Week ${profile.pregnancy_week}`);
+    }
+    if (profile.trimester) {
+      facts.push(`Trimester ${profile.trimester}`);
+    }
+    if (profile.due_date) {
+      const parsed = new Date(profile.due_date);
+      const dueLabel = Number.isNaN(parsed.getTime())
+        ? profile.due_date
+        : parsed.toLocaleDateString();
+      facts.push(`Due ${dueLabel}`);
+    }
+
+    return facts.length
+      ? facts.join(" • ")
+      : language === "hi"
+      ? "व्यक्तिगत विवरण तैयार हैं।"
+      : "Personalization ready.";
+  }, [language, profile, profileLoading]);
 
   return (
     <View style={styles.voiceContainer}>
-      {!isConnected ? (
-        <View style={styles.voiceEmptyState}>
-          <MotiView
-            from={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ type: "spring", delay: 200 }}
-          >
-            <View style={styles.micIconContainer}>
-              <Ionicons name="mic-outline" size={64} color={colors.primary} />
-            </View>
-          </MotiView>
+      <View style={styles.voiceHeroCard}>
+        <MotiView
+          from={{ scale: 0.95, opacity: 0.85 }}
+          animate={{ scale: isActivationActive ? 1.08 : 1, opacity: 1 }}
+          transition={{ type: "timing", duration: 300 }}
+          style={[
+            styles.voiceWaveform,
+            isActivationActive && styles.voiceWaveformActive,
+            connected && styles.voiceWaveformConnected,
+          ]}
+        >
+          <Ionicons
+            name={connected ? (isMuted ? "mic-off" : "mic") : "mic-outline"}
+            size={64}
+            color={colors.surface}
+          />
+        </MotiView>
 
-          <Text style={styles.voiceTitle}>Voice Assistant</Text>
-          <Text style={styles.voiceSubtitle}>
-            Talk naturally with your AI pregnancy assistant.{"\n"}
-            Just tap the button below to start.
-          </Text>
+        <Text style={styles.voiceTitle}>Voice Assistant</Text>
+        <Text style={styles.voiceSubtitle}>
+          {connected
+            ? `Hi ${displayName}, I am ready to listen.`
+            : "Talk naturally with your AI pregnancy companion."}
+        </Text>
 
-          {error && (
-            <View style={styles.voiceError}>
-              <Ionicons name="warning" size={16} color={colors.danger} />
-              <Text style={styles.voiceErrorText}>{error}</Text>
-            </View>
-          )}
-
-          <Pressable
-            onPress={handleConnect}
-            disabled={isConnecting}
-            style={({ pressed }) => [
-              styles.voiceConnectButton,
-              pressed && styles.voiceConnectButtonPressed,
-              isConnecting && styles.voiceConnectButtonDisabled,
-            ]}
-          >
-            {isConnecting ? (
-              <ActivityIndicator color={colors.surface} />
-            ) : (
-              <>
-                <Ionicons name="mic" size={24} color={colors.surface} />
-                <Text style={styles.voiceConnectButtonText}>
-                  Start Voice Chat
-                </Text>
-              </>
-            )}
-          </Pressable>
-
-          <Text style={styles.voiceNote}>
-            Note: Voice Assistant feature is currently in development
-          </Text>
-        </View>
-      ) : (
-        <View style={styles.voiceActiveState}>
-          <MotiView
-            from={{ scale: 1 }}
-            animate={{ scale: isSpeaking ? 1.1 : 1 }}
-            transition={{
-              type: "timing",
-              duration: 500,
-              loop: isSpeaking,
-            }}
+        <View style={styles.voiceStatusRow}>
+          <View
             style={[
-              styles.voiceWaveform,
-              isSpeaking && styles.voiceWaveformActive,
+              styles.voiceStatusChip,
+              connected && styles.voiceStatusChipActive,
+              connecting && styles.voiceStatusChipConnecting,
             ]}
           >
             <Ionicons
-              name={isSpeaking ? "mic" : "mic-outline"}
-              size={80}
-              color={colors.surface}
+              name={connected ? "radio" : "ellipse-outline"}
+              size={16}
+              color={connected ? colors.primary : colors.textSecondary}
             />
-          </MotiView>
-
-          <Text style={styles.voiceStatus}>
-            {isSpeaking ? "Listening..." : "Ready to listen"}
-          </Text>
-
-          <View style={styles.voiceControls}>
-            <Pressable
-              onPress={() => setIsSpeaking(!isSpeaking)}
-              style={styles.voiceControlButton}
+            <Text
+              style={[
+                styles.voiceStatusChipText,
+                (connected || connecting) && styles.voiceStatusChipTextActive,
+              ]}
             >
-              <Ionicons
-                name={isSpeaking ? "pause" : "play"}
-                size={28}
-                color={colors.primary}
-              />
-            </Pressable>
-
-            <Pressable
-              onPress={handleDisconnect}
-              style={styles.voiceDisconnectButton}
-            >
-              <Ionicons name="close" size={28} color={colors.danger} />
-            </Pressable>
+              {connectionBadgeLabel}
+            </Text>
           </View>
 
+          <View
+            style={[
+              styles.voiceStatusChip,
+              isMuted && styles.voiceStatusChipMuted,
+            ]}
+          >
+            <Ionicons
+              name={isMuted ? "volume-mute" : "volume-high"}
+              size={16}
+              color={isMuted ? colors.danger : colors.textSecondary}
+            />
+            <Text
+              style={[
+                styles.voiceStatusChipText,
+                isMuted && styles.voiceStatusChipTextDanger,
+              ]}
+            >
+              {isMuted ? "Muted" : "Live"}
+            </Text>
+          </View>
+
+          {sessionDetails && (
+            <View style={styles.voiceStatusChip}>
+              <Ionicons
+                name="hardware-chip-outline"
+                size={16}
+                color={colors.textSecondary}
+              />
+              <Text style={styles.voiceStatusChipText}>
+                {sessionDetails.model}
+              </Text>
+            </View>
+          )}
+        </View>
+
+        <Pressable
+          onPress={handlePrimaryAction}
+          disabled={primaryDisabled}
+          style={({ pressed }) => [
+            styles.voicePrimaryButton,
+            connected && styles.voicePrimaryButtonConnected,
+            primaryDisabled && styles.voicePrimaryButtonDisabled,
+            pressed && !primaryDisabled && styles.voicePrimaryButtonPressed,
+          ]}
+        >
+          {connecting ? (
+            <ActivityIndicator color={colors.surface} />
+          ) : (
+            <>
+              <Ionicons
+                name={primaryButtonIcon as any}
+                size={20}
+                color={colors.surface}
+              />
+              <Text style={styles.voicePrimaryButtonText}>
+                {primaryButtonLabel}
+              </Text>
+            </>
+          )}
+        </Pressable>
+
+        {!user?.id && (
           <Text style={styles.voiceNote}>
-            This is a preview. Full functionality coming soon.
+            Sign in to unlock realtime voice conversations.
           </Text>
+        )}
+      </View>
+
+      <View style={styles.voiceContentArea}>
+        {voiceMessages.length === 0 ? (
+          <View style={styles.voiceEmptyTranscripts}>
+            <Ionicons
+              name="chatbubble-ellipses-outline"
+              size={36}
+              color={colors.primary}
+            />
+            <Text style={styles.voiceEmptyTitle}>Realtime conversation</Text>
+            <Text style={styles.voiceEmptyText}>
+              {connected
+                ? "Start speaking whenever you are ready."
+                : "Press start to begin a personalised voice session."}
+            </Text>
+          </View>
+        ) : (
+          <FlatList
+            ref={transcriptListRef}
+            data={voiceMessages}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <MessageBubble message={item} isUser={item.role === "user"} />
+            )}
+            contentContainerStyle={styles.voiceTranscriptList}
+          />
+        )}
+      </View>
+
+      {connected && (
+        <View style={styles.voiceControls}>
+          <Pressable
+            onPress={toggleMute}
+            style={({ pressed }) => [
+              styles.voiceControlButton,
+              pressed && styles.voiceControlButtonPressed,
+            ]}
+          >
+            <Ionicons
+              name={isMuted ? "mic-off" : "mic"}
+              size={20}
+              color={colors.primary}
+            />
+            <Text style={styles.voiceControlLabel}>
+              {isMuted ? "Unmute" : "Mute"}
+            </Text>
+          </Pressable>
+
+          <Pressable
+            onPress={() => void disconnect()}
+            style={({ pressed }) => [
+              styles.voiceControlButton,
+              styles.voiceControlButtonDanger,
+              pressed && styles.voiceControlButtonPressed,
+            ]}
+          >
+            <Ionicons name="close-circle" size={20} color={colors.surface} />
+            <Text style={styles.voiceControlLabelDanger}>End</Text>
+          </Pressable>
         </View>
       )}
+
+      {remoteStreamUrl && (
+        <RTCView
+          streamURL={remoteStreamUrl}
+          style={styles.voiceHiddenAudio}
+          zOrder={0}
+          objectFit="cover"
+        />
+      )}
+
+      {errorMessage && (
+        <View style={styles.voiceErrorBanner}>
+          <Ionicons name="warning" size={16} color={colors.surface} />
+          <Text style={styles.voiceErrorText}>{errorMessage}</Text>
+        </View>
+      )}
+
+      <View style={styles.voicePersonalization}>
+        <Text style={styles.voicePersonalizationTitle}>Personalization</Text>
+        {profileLoading ? (
+          <ActivityIndicator color={colors.primary} size="small" />
+        ) : (
+          <Text style={styles.voicePersonalizationText}>
+            {personalizationSummary}
+          </Text>
+        )}
+      </View>
     </View>
   );
 }
@@ -686,7 +958,7 @@ export default function AssistantScreen() {
           </KeyboardAvoidingView>
         </>
       ) : (
-        <VoiceAssistant userId={user?.id || ""} language={preferredLanguage} />
+        <VoiceAssistant user={user} language={preferredLanguage} />
       )}
     </SafeAreaView>
   );
@@ -753,14 +1025,6 @@ const styles = StyleSheet.create({
   },
   messageBubbleContent: {
     flex: 1,
-  },
-  messageText: {
-    fontSize: typography.body,
-    color: colors.textPrimary,
-    lineHeight: 20,
-  },
-  userText: {
-    color: colors.surface,
   },
   timestamp: {
     fontSize: typography.caption,
@@ -880,11 +1144,6 @@ const styles = StyleSheet.create({
     fontSize: typography.caption,
     color: colors.textPrimary,
   },
-  retryText: {
-    fontSize: typography.caption,
-    color: colors.primary,
-    fontWeight: "600",
-  },
   tabContainer: {
     flexDirection: "row",
     gap: spacing.md,
@@ -917,22 +1176,18 @@ const styles = StyleSheet.create({
   },
   voiceContainer: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: spacing.xl,
-  },
-  voiceEmptyState: {
-    alignItems: "center",
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
     gap: spacing.lg,
   },
-  micIconContainer: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: colors.mutedPink,
+  voiceHeroCard: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.xl,
+    backgroundColor: colors.surface,
+    borderRadius: radii.xl,
     alignItems: "center",
-    justifyContent: "center",
-    marginBottom: spacing.md,
+    gap: spacing.md,
+    ...shadows.soft,
   },
   voiceTitle: {
     fontSize: typography.headline,
@@ -945,87 +1200,184 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 22,
   },
-  voiceError: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.sm,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radii.sm,
-    backgroundColor: "rgba(239, 154, 154, 0.1)",
-  },
-  voiceErrorText: {
-    fontSize: typography.caption,
-    color: colors.danger,
-  },
-  voiceConnectButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.lg,
-    borderRadius: radii.lg,
-    backgroundColor: colors.primary,
-    ...shadows.card,
-  },
-  voiceConnectButtonPressed: {
-    transform: [{ scale: 0.95 }],
-  },
-  voiceConnectButtonDisabled: {
-    opacity: 0.6,
-  },
-  voiceConnectButtonText: {
-    fontSize: typography.subtitle,
-    fontWeight: "600",
-    color: colors.surface,
-  },
   voiceNote: {
     fontSize: typography.caption,
     color: colors.textSecondary,
     fontStyle: "italic",
     textAlign: "center",
   },
-  voiceActiveState: {
-    alignItems: "center",
-    gap: spacing.xl,
-  },
   voiceWaveform: {
-    width: 160,
-    height: 160,
-    borderRadius: 80,
+    width: 140,
+    height: 140,
+    borderRadius: 70,
     backgroundColor: colors.primary,
     alignItems: "center",
     justifyContent: "center",
-    ...shadows.card,
+    ...shadows.soft,
   },
   voiceWaveformActive: {
     backgroundColor: colors.secondary,
   },
-  voiceStatus: {
-    fontSize: typography.title,
+  voiceWaveformConnected: {
+    backgroundColor: colors.primary,
+    borderWidth: 2,
+    borderColor: "rgba(255, 255, 255, 0.7)",
+  },
+  voiceStatusRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    gap: spacing.sm,
+  },
+  voiceStatusChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radii.full,
+    backgroundColor: colors.mutedPink,
+  },
+  voiceStatusChipActive: {
+    backgroundColor: colors.lilac,
+  },
+  voiceStatusChipConnecting: {
+    backgroundColor: colors.peach,
+  },
+  voiceStatusChipMuted: {
+    backgroundColor: "rgba(239, 154, 154, 0.35)",
+  },
+  voiceStatusChipText: {
+    fontSize: typography.caption,
+    color: colors.textSecondary,
+  },
+  voiceStatusChipTextActive: {
+    color: colors.textPrimary,
+    fontWeight: "600",
+  },
+  voiceStatusChipTextDanger: {
+    color: colors.danger,
+    fontWeight: "600",
+  },
+  voicePrimaryButton: {
+    marginTop: spacing.md,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: spacing.sm,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
+    borderRadius: radii.full,
+    backgroundColor: colors.primary,
+    width: "100%",
+    ...shadows.card,
+  },
+  voicePrimaryButtonConnected: {
+    backgroundColor: colors.danger,
+  },
+  voicePrimaryButtonDisabled: {
+    opacity: 0.6,
+  },
+  voicePrimaryButtonPressed: {
+    transform: [{ scale: 0.97 }],
+  },
+  voicePrimaryButtonText: {
+    fontSize: typography.subtitle,
+    fontWeight: "600",
+    color: colors.surface,
+  },
+  voiceContentArea: {
+    flex: 1,
+    borderRadius: radii.lg,
+    backgroundColor: colors.surface,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    ...shadows.soft,
+  },
+  voiceTranscriptList: {
+    gap: spacing.md,
+    paddingBottom: spacing.sm,
+  },
+  voiceEmptyTranscripts: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: spacing.md,
+    paddingVertical: spacing.lg,
+  },
+  voiceEmptyTitle: {
+    fontSize: typography.subtitle,
     fontWeight: "600",
     color: colors.textPrimary,
   },
+  voiceEmptyText: {
+    fontSize: typography.body,
+    color: colors.textSecondary,
+    textAlign: "center",
+  },
   voiceControls: {
     flexDirection: "row",
-    gap: spacing.xl,
+    justifyContent: "center",
+    gap: spacing.lg,
   },
   voiceControlButton: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: colors.surface,
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    ...shadows.card,
+    gap: spacing.xs,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.full,
+    backgroundColor: colors.surface,
+    ...shadows.soft,
   },
-  voiceDisconnectButton: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: colors.surface,
+  voiceControlButtonDanger: {
+    backgroundColor: colors.danger,
+  },
+  voiceControlButtonPressed: {
+    transform: [{ scale: 0.97 }],
+  },
+  voiceControlLabel: {
+    fontSize: typography.caption,
+    fontWeight: "600",
+    color: colors.primary,
+  },
+  voiceControlLabelDanger: {
+    fontSize: typography.caption,
+    fontWeight: "600",
+    color: colors.surface,
+  },
+  voiceErrorBanner: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    ...shadows.card,
+    gap: spacing.sm,
+    padding: spacing.sm,
+    borderRadius: radii.md,
+    backgroundColor: colors.danger,
+  },
+  voiceErrorText: {
+    flex: 1,
+    fontSize: typography.caption,
+    color: colors.surface,
+  },
+  voicePersonalization: {
+    padding: spacing.md,
+    borderRadius: radii.md,
+    backgroundColor: colors.mutedPink,
+    gap: spacing.xs,
+  },
+  voicePersonalizationTitle: {
+    fontSize: typography.label,
+    fontWeight: "600",
+    color: colors.textPrimary,
+  },
+  voicePersonalizationText: {
+    fontSize: typography.caption,
+    color: colors.textSecondary,
+  },
+  voiceHiddenAudio: {
+    position: "absolute",
+    width: 1,
+    height: 1,
+    opacity: 0,
   },
 });

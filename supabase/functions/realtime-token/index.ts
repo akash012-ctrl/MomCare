@@ -1,3 +1,4 @@
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
 // Environment variables for security
@@ -15,6 +16,7 @@ interface EphemeralTokenRequest {
     model?: string;
     voice?: string;
     instructions?: string;
+    language?: "en" | "hi";
 }
 
 interface EphemeralTokenResponse {
@@ -24,7 +26,7 @@ interface EphemeralTokenResponse {
     };
 }
 
-Deno.serve(async (req) => {
+Deno.serve(async (req: Request) => {
     // Handle CORS preflight
     if (req.method === "OPTIONS") {
         return new Response(null, { headers: corsHeaders });
@@ -64,10 +66,14 @@ Deno.serve(async (req) => {
         const body: EphemeralTokenRequest = await req.json();
         const model = body.model || "gpt-4o-realtime-preview-2024-12-17";
         const voice = body.voice || "alloy";
-        const instructions = body.instructions || `You are a helpful and caring pregnancy assistant for MomCare app. 
-You provide evidence-based guidance on pregnancy, nutrition, health, and wellness. 
-Be warm, empathetic, and supportive. Always encourage users to consult healthcare providers for medical concerns.
-User ID: ${user.id}`;
+        const language = body.language || "en";
+
+        const defaultInstructions = `You are MomCare's caring pregnancy companion.
+You speak in ${language === "hi" ? "polite Hindi" : "warm English"}, adapt to the mother's emotional state, and provide actionable, culturally aware guidance.
+Always encourage consultation with healthcare professionals for medical issues.
+User ID: ${user.id}.`;
+
+        const instructions = body.instructions || defaultInstructions;
 
         // Generate ephemeral token from OpenAI
         const response = await fetch("https://api.openai.com/v1/realtime/sessions", {
@@ -79,6 +85,7 @@ User ID: ${user.id}`;
             body: JSON.stringify({
                 model: model,
                 voice: voice,
+                modalities: ["text", "audio"],
                 instructions: instructions,
                 turn_detection: {
                     type: "server_vad",
@@ -88,9 +95,6 @@ User ID: ${user.id}`;
                 },
                 input_audio_format: "pcm16",
                 output_audio_format: "pcm16",
-                input_audio_transcription: {
-                    model: "whisper-1"
-                },
                 temperature: 0.7,
                 max_response_output_tokens: 4096,
             }),
@@ -120,6 +124,7 @@ User ID: ${user.id}`;
                 expires_at: data.client_secret.expires_at,
                 model: model,
                 voice: voice,
+                language: language,
             }),
             { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );

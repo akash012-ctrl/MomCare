@@ -28,17 +28,19 @@ export interface ChatResponse {
 }
 
 // Realtime voice uses WebRTC with ephemeral token - no separate STT/TTS functions needed
-export interface RealtimeTokenRequest {
-    language?: "en" | "hi";
-    model?: string;
-}
-
 export interface RealtimeTokenResponse {
     client_secret: string;
     expires_at: string;
     model: string;
     voice: string;
     language: string;
+}
+
+export interface RealtimeTokenOptions {
+    language?: "en" | "hi";
+    model?: string;
+    voice?: string;
+    instructions?: string;
 }
 
 export interface SymptomLog {
@@ -228,13 +230,29 @@ export async function getConversationHistory(
  * @returns Ephemeral token and session config
  */
 export async function getRealtimeToken(
-    language: "en" | "hi" = "en"
+    options: RealtimeTokenOptions = {}
 ): Promise<RealtimeTokenResponse> {
     try {
+        const payload: Record<string, unknown> = {};
+
+        if (options.language) {
+            payload.language = options.language;
+        }
+
+        if (options.model) {
+            payload.model = options.model;
+        }
+
+        if (options.voice) {
+            payload.voice = options.voice;
+        }
+
+        if (options.instructions) {
+            payload.instructions = options.instructions;
+        }
+
         const { data, error } = await supabase.functions.invoke('realtime-token', {
-            body: {
-                language,
-            },
+            body: payload,
         });
 
         if (error) throw error;

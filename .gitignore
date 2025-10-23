@@ -10,8 +10,8 @@ docs/
 dist/
 web-build/
 expo-env.d.ts
-eas.json
-app.json
+eas.*
+app.*
 # Native
 .kotlin/
 *.orig.*
