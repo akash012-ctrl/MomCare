@@ -271,8 +271,8 @@ export async function saveSymptom(
     symptom: SymptomLog
 ): Promise<SymptomLog> {
     try {
-        const { data, error } = await supabase.functions.invoke('data-api', {
-            body: { ...symptom, userId, resource: 'symptoms' },
+        const { data, error } = await supabase.functions.invoke('data-api/symptoms', {
+            body: { ...symptom, userId },
         });
 
         if (error) throw error;
@@ -285,8 +285,8 @@ export async function saveSymptom(
 
 export async function getSymptoms(userId: string): Promise<SymptomLog[]> {
     try {
-        const { data, error } = await supabase.functions.invoke('data-api', {
-            body: { userId, resource: 'symptoms' },
+        const { data, error } = await supabase.functions.invoke('data-api/symptoms', {
+            body: { userId },
             method: 'GET',
         });
 
@@ -306,8 +306,8 @@ export async function saveKick(
     kick: KickEntry
 ): Promise<KickEntry> {
     try {
-        const { data, error } = await supabase.functions.invoke('data-api', {
-            body: { ...kick, userId, resource: 'kicks' },
+        const { data, error } = await supabase.functions.invoke('data-api/kicks', {
+            body: { ...kick, userId },
         });
 
         if (error) throw error;
@@ -320,8 +320,8 @@ export async function saveKick(
 
 export async function getKicks(userId: string): Promise<KickEntry[]> {
     try {
-        const { data, error } = await supabase.functions.invoke('data-api', {
-            body: { userId, resource: 'kicks' },
+        const { data, error } = await supabase.functions.invoke('data-api/kicks', {
+            body: { userId },
             method: 'GET',
         });
 
@@ -341,8 +341,8 @@ export async function saveNutrition(
     nutrition: NutritionLog
 ): Promise<NutritionLog> {
     try {
-        const { data, error } = await supabase.functions.invoke('data-api', {
-            body: { ...nutrition, userId, resource: 'nutrition' },
+        const { data, error } = await supabase.functions.invoke('data-api/nutrition', {
+            body: { ...nutrition, userId },
         });
 
         if (error) throw error;
@@ -358,8 +358,8 @@ export async function getNutrition(
     date?: string
 ): Promise<NutritionLog[]> {
     try {
-        const { data, error } = await supabase.functions.invoke('data-api', {
-            body: { userId, resource: 'nutrition', date },
+        const { data, error } = await supabase.functions.invoke('data-api/nutrition', {
+            body: { userId, date },
             method: 'GET',
         });
 
@@ -379,8 +379,8 @@ export async function saveGoal(
     goal: Goal
 ): Promise<Goal> {
     try {
-        const { data, error } = await supabase.functions.invoke('data-api', {
-            body: { ...goal, userId, resource: 'goals' },
+        const { data, error } = await supabase.functions.invoke('data-api/goals', {
+            body: { ...goal, userId },
         });
 
         if (error) throw error;
@@ -393,8 +393,8 @@ export async function saveGoal(
 
 export async function getGoals(userId: string): Promise<Goal[]> {
     try {
-        const { data, error } = await supabase.functions.invoke('data-api', {
-            body: { userId, resource: 'goals' },
+        const { data, error } = await supabase.functions.invoke('data-api/goals', {
+            body: { userId },
             method: 'GET',
         });
 
@@ -412,8 +412,8 @@ export async function updateGoal(
     updates: Partial<Goal>
 ): Promise<Goal> {
     try {
-        const { data, error } = await supabase.functions.invoke('data-api', {
-            body: { goalId, ...updates, userId, resource: 'goals' },
+        const { data, error } = await supabase.functions.invoke('data-api/goals', {
+            body: { goalId, ...updates, userId },
             method: 'PUT',
         });
 
@@ -433,8 +433,8 @@ export async function saveAlert(
     alert: HealthAlert
 ): Promise<HealthAlert> {
     try {
-        const { data, error } = await supabase.functions.invoke('data-api', {
-            body: { ...alert, userId, resource: 'alerts' },
+        const { data, error } = await supabase.functions.invoke('data-api/alerts', {
+            body: { ...alert, userId },
         });
 
         if (error) throw error;
@@ -447,8 +447,8 @@ export async function saveAlert(
 
 export async function getAlerts(userId: string): Promise<HealthAlert[]> {
     try {
-        const { data, error } = await supabase.functions.invoke('data-api', {
-            body: { userId, resource: 'alerts' },
+        const { data, error } = await supabase.functions.invoke('data-api/alerts', {
+            body: { userId },
             method: 'GET',
         });
 
@@ -466,8 +466,8 @@ export async function updateAlert(
     updates: Partial<HealthAlert>
 ): Promise<HealthAlert> {
     try {
-        const { data, error } = await supabase.functions.invoke('data-api', {
-            body: { alertId, ...updates, userId, resource: 'alerts' },
+        const { data, error } = await supabase.functions.invoke('data-api/alerts', {
+            body: { alertId, ...updates, userId },
             method: 'PUT',
         });
 
@@ -484,9 +484,8 @@ export async function updateAlert(
  */
 export async function getProfile(userId: string): Promise<UserProfile> {
     try {
-        const { data, error } = await supabase.functions.invoke('data-api', {
-            body: { userId, resource: 'profile' },
-            method: 'GET',
+        const { data, error } = await supabase.functions.invoke('data-api/profile', {
+            body: { userId },
         });
 
         if (error) throw error;
@@ -502,8 +501,8 @@ export async function updateProfileData(
     updates: Partial<UserProfile>
 ): Promise<UserProfile> {
     try {
-        const { data, error } = await supabase.functions.invoke('data-api', {
-            body: { ...updates, userId, resource: 'profile' },
+        const { data, error } = await supabase.functions.invoke('data-api/profile', {
+            body: { ...updates, userId },
             method: 'PUT',
         });
 

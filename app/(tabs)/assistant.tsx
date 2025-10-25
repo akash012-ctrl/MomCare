@@ -9,17 +9,24 @@ import {
   Pressable,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native";
-import Markdown from "react-native-markdown-display";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { RTCView } from "react-native-webrtc";
 
+import { ChatInput } from "@/components/assistant/chat-input";
+import { MessageBubble } from "@/components/assistant/message-bubble";
+import type { AssistantMessage } from "@/components/assistant/types";
 import { MotherhoodTheme } from "@/constants/theme";
 import { useAuth } from "@/hooks/use-auth";
 import { useRealtimeVoice } from "@/hooks/use-realtime-voice";
-import type { ChatMessage, UserProfile } from "@/lib/supabase-api";
+import { getSupabase } from "@/lib/supabase";
+import type {
+  ChatMessage,
+  NutritionLog,
+  SymptomLog,
+  UserProfile,
+} from "@/lib/supabase-api";
 import {
   getConversationHistory,
   getProfile,
@@ -31,210 +38,131 @@ import type { User } from "@/lib/types";
 const { colors, radii, spacing, typography, shadows } = MotherhoodTheme;
 
 type TabType = "chat" | "voice";
-type AssistantMessage = ChatMessage & {
-  id: string;
-  metadata?: Record<string, unknown>;
-};
 
-function getMessageText(message: AssistantMessage): string {
-  return (message.content ?? "").trim();
+function getTodayBounds(): { start: string; end: string } {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const end = new Date(start);
+  end.setDate(end.getDate() + 1);
+  return {
+    start: start.toISOString(),
+    end: end.toISOString(),
+  };
 }
 
-function getMessageTimestamp(message: AssistantMessage): Date {
-  const metadata = message.metadata ?? {};
-  const rawTimestamp =
-    (metadata.timestamp as string | undefined) ??
-    (metadata.createdAt as string | undefined) ??
-    (metadata.created_at as string | undefined);
+function formatDateLabel(date: Date, language: "en" | "hi"): string {
+  const locale = language === "hi" ? "hi-IN" : "en-US";
+  return date.toLocaleDateString(locale, {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+}
 
-  if (rawTimestamp) {
-    const parsed = new Date(rawTimestamp);
-    if (!Number.isNaN(parsed.getTime())) {
-      return parsed;
-    }
+function formatDisplayDate(iso: string | null | undefined, language: "en" | "hi"): string | null {
+  if (!iso) return null;
+  const parsed = new Date(iso);
+  if (Number.isNaN(parsed.getTime())) {
+    return iso;
+  }
+  return formatDateLabel(parsed, language);
+}
+
+function formatTimeLabel(iso: string | null | undefined, language: "en" | "hi"): string {
+  if (!iso) return "";
+  const parsed = new Date(iso);
+  if (Number.isNaN(parsed.getTime())) {
+    return "";
+  }
+  const locale = language === "hi" ? "hi-IN" : "en-US";
+  return parsed.toLocaleTimeString(locale, {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function titleCase(value: string | null | undefined): string {
+  if (!value) return "";
+  return value
+    .toLowerCase()
+    .split(" ")
+    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+    .join(" ");
+}
+
+function moodSeverityLabel(severity: number | null | undefined, language: "en" | "hi"): string {
+  if (!severity || Number.isNaN(severity)) {
+    return language === "hi" ? "मन:स्थिति दर्ज नहीं" : "Mood not logged";
   }
 
-  return new Date();
-}
-
-function MessageBubble({
-  message,
-  isUser,
-}: {
-  message: AssistantMessage;
-  isUser: boolean;
-}) {
-  const text = getMessageText(message);
-  const timestamp = getMessageTimestamp(message);
-
-  const markdownStyles = {
-    body: {
-      color: isUser ? colors.surface : colors.textPrimary,
-      fontSize: typography.body,
-    },
-    text: {
-      color: isUser ? colors.surface : colors.textPrimary,
-      fontSize: typography.body,
-    },
-    strong: {
-      color: isUser ? colors.surface : colors.textPrimary,
-      fontWeight: "600" as const,
-    },
-    em: {
-      color: isUser ? colors.surface : colors.textPrimary,
-      fontStyle: "italic" as const,
-    },
-    heading1: {
-      color: isUser ? colors.surface : colors.textPrimary,
-      fontSize: 20,
-      fontWeight: "700" as const,
-      marginVertical: 8,
-    },
-    heading2: {
-      color: isUser ? colors.surface : colors.textPrimary,
-      fontSize: 18,
-      fontWeight: "600" as const,
-      marginVertical: 6,
-    },
-    heading3: {
-      color: isUser ? colors.surface : colors.textPrimary,
-      fontSize: 16,
-      fontWeight: "600" as const,
-      marginVertical: 4,
-    },
-    bullet_list: {
-      marginVertical: 8,
-    },
-    ordered_list: {
-      marginVertical: 8,
-    },
-    list_item: {
-      flexDirection: "row" as const,
-      marginVertical: 4,
-    },
-    bullet_list_icon: {
-      marginRight: 8,
-      color: isUser ? colors.surface : colors.textPrimary,
-    },
-    code_inline: {
-      backgroundColor: isUser ? "rgba(255, 255, 255, 0.2)" : colors.surface,
-      color: isUser ? colors.surface : colors.primary,
-      paddingHorizontal: 4,
-      borderRadius: 4,
-      fontFamily: "Courier New",
-    },
-    code_block: {
-      backgroundColor: colors.surface,
-      color: colors.textPrimary,
-      padding: 8,
-      borderRadius: 4,
-      marginVertical: 8,
-    },
-    link: {
-      color: colors.primary,
-      textDecorationLine: "underline" as const,
-    },
+  const clamped = Math.max(1, Math.min(5, Math.round(severity)));
+  const labels: Record<number, { en: string; hi: string }> = {
+    1: { en: "very low", hi: "बहुत कम" },
+    2: { en: "low", hi: "कम" },
+    3: { en: "steady", hi: "संतुलित" },
+    4: { en: "positive", hi: "सकारात्मक" },
+    5: { en: "uplifted", hi: "उत्साहित" },
   };
 
-  return (
-    <MotiView
-      from={{ opacity: 0, scale: 0.85, translateY: 20 }}
-      animate={{ opacity: 1, scale: 1, translateY: 0 }}
-      transition={{
-        type: "timing",
-        duration: 300,
-        delay: 50,
-      }}
-      style={[styles.messageBubble, isUser && styles.userBubble]}
-    >
-      <View style={styles.messageBubbleContent}>
-        <Markdown style={markdownStyles}>{text}</Markdown>
-        <Text style={[styles.timestamp, isUser && styles.userTimestamp]}>
-          {timestamp.toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          })}
-        </Text>
-      </View>
-    </MotiView>
-  );
+  const label = labels[clamped] ?? labels[3];
+  return language === "hi" ? label.hi : label.en;
 }
 
-interface ChatInputProps {
-  draft: string;
-  onChangeDraft: (value: string) => void;
-  onSend: () => void;
-  onToggleImagePicker: () => void;
-  isSubmitting: boolean;
-  hasImage: boolean;
+function buildMoodSummary(mood: SymptomLog | null, language: "en" | "hi"): string | null {
+  if (!mood) {
+    return null;
+  }
+
+  const descriptor = moodSeverityLabel(mood.severity, language);
+  const note = typeof mood.notes === "string" ? mood.notes.trim() : "";
+  const when = formatTimeLabel(mood.occurred_at, language);
+  const timeSuffix = when ? ` (${when})` : "";
+
+  if (note) {
+    return language === "hi"
+      ? `${descriptor} महसूस कर रही हैं${timeSuffix}. नोट: ${note}`
+      : `${descriptor} mood logged${timeSuffix}. Note: ${note}`;
+  }
+
+  return language === "hi"
+    ? `${descriptor} महसूस कर रही हैं${timeSuffix}.`
+    : `${descriptor} mood recorded${timeSuffix}.`;
 }
 
-function ChatInput({
-  draft,
-  onChangeDraft,
-  onSend,
-  onToggleImagePicker,
-  isSubmitting,
-  hasImage,
-}: ChatInputProps) {
-  return (
-    <View style={styles.inputContainer}>
-      <View style={styles.inputWrapper}>
-        <Pressable
-          onPress={onToggleImagePicker}
-          disabled={isSubmitting}
-          style={({ pressed }) => [
-            styles.imagePickerButton,
-            pressed && styles.imagePickerButtonPressed,
-            hasImage && styles.imagePickerButtonActive,
-          ]}
-        >
-          <Ionicons
-            name={hasImage ? "image" : "image-outline"}
-            size={30}
-            color={hasImage ? colors.primary : colors.textSecondary}
-          />
-        </Pressable>
-        <TextInput
-          value={draft}
-          onChangeText={onChangeDraft}
-          placeholder="Ask your doubts "
-          placeholderTextColor="rgba(112, 76, 87, 0.5)"
-          multiline
-          maxLength={800}
-          editable={!isSubmitting}
-          style={styles.input}
-        />
-      </View>
-      <MotiView
-        from={{ scale: 1 }}
-        animate={{ scale: isSubmitting ? 0.95 : 1 }}
-        transition={{ type: "timing", duration: 100 }}
-      >
-        <Pressable
-          onPress={onSend}
-          disabled={isSubmitting || (!draft.trim() && !hasImage)}
-          style={({ pressed }) => [
-            styles.sendButton,
-            (pressed || isSubmitting) && styles.sendButtonPressed,
-            (!draft.trim() && !hasImage) || isSubmitting
-              ? styles.sendButtonDisabled
-              : null,
-          ]}
-        >
-          <Ionicons
-            name="send"
-            size={18}
-            color={
-              (draft.trim() || hasImage) && !isSubmitting
-                ? colors.surface
-                : colors.textSecondary
-            }
-          />
-        </Pressable>
-      </MotiView>
-    </View>
-  );
+function buildMealSummaries(meals: NutritionLog[], language: "en" | "hi"): string[] {
+  if (!meals.length) {
+    return [];
+  }
+
+  return meals.slice(0, 3).map((meal) => {
+    const descriptor = meal.meal_type
+      ? titleCase(meal.meal_type)
+      : language === "hi"
+        ? "भोजन"
+        : "Meal";
+    const time = formatTimeLabel(meal.logged_at, language);
+    const calories = typeof meal.calories === "number"
+      ? `${Math.round(meal.calories)} kcal`
+      : language === "hi"
+        ? "कैलोरी उपलब्ध नहीं"
+        : "Calories not logged";
+    const note = typeof meal.notes === "string" ? meal.notes.trim() : "";
+
+    const headline = time ? `${descriptor} · ${time}` : descriptor;
+    const detailParts = [calories];
+    if (note) {
+      detailParts.push(note);
+    }
+
+    return `${headline}: ${detailParts.join(" — ")}`;
+  });
+}
+
+function sumMealCalories(meals: NutritionLog[]): number {
+  return meals.reduce((total, meal) => {
+    const calories = typeof meal.calories === "number" ? meal.calories : 0;
+    return total + calories;
+  }, 0);
 }
 
 function TabSelector({
@@ -300,115 +228,399 @@ function VoiceAssistant({
   user: User | null;
   language: "en" | "hi";
 }) {
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [profileLoading, setProfileLoading] = useState(false);
-  const [profileError, setProfileError] = useState<string | null>(null);
   const transcriptListRef = useRef<FlatList<AssistantMessage>>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [todayMood, setTodayMood] = useState<SymptomLog | null>(null);
+  const [todayMeals, setTodayMeals] = useState<NutritionLog[]>([]);
+  const [contextLoading, setContextLoading] = useState(false);
+  const [contextError, setContextError] = useState<string | null>(null);
 
   React.useEffect(() => {
-    let isMounted = true;
+    let cancelled = false;
 
     if (!user?.id) {
       setProfile(null);
-      setProfileError(null);
-      setProfileLoading(false);
+      setTodayMood(null);
+      setTodayMeals([]);
+      setContextError(null);
+      setContextLoading(false);
       return () => {
-        isMounted = false;
+        cancelled = true;
       };
     }
 
-    const hydrateProfile = async () => {
+    const supabaseClient = getSupabase();
+    const { start, end } = getTodayBounds();
+
+    const fetchContext = async () => {
+      setContextLoading(true);
+      setContextError(null);
+
+      let profileResult: UserProfile | null = null;
+      let moodResult: SymptomLog | null = null;
+      let mealsResult: NutritionLog[] = [];
+      let failureMessage: string | null = null;
+
       try {
-        setProfileLoading(true);
-        const result = await getProfile(user.id);
-        if (!isMounted) return;
-        setProfile(result);
-        setProfileError(null);
-      } catch (err) {
-        console.error("Failed to load profile for voice assistant:", err);
-        if (isMounted) {
-          setProfileError(
-            err instanceof Error
-              ? err.message
-              : "Unable to load personalization data"
-          );
-        }
-      } finally {
-        if (isMounted) {
-          setProfileLoading(false);
+        profileResult = await getProfile(user.id);
+      } catch (profileError) {
+        console.warn("Voice assistant profile fetch failed", profileError);
+        failureMessage =
+          language === "hi"
+            ? "प्रोफ़ाइल डेटा उपलब्ध नहीं।"
+            : "Profile data is currently unavailable.";
+      }
+
+      try {
+        const { data, error } = await supabaseClient
+          .from("symptoms")
+          .select("id,symptom_type,severity,notes,occurred_at")
+          .eq("user_id", user.id)
+          .eq("symptom_type", "mood")
+          .gte("occurred_at", start)
+          .lt("occurred_at", end)
+          .order("occurred_at", { ascending: false })
+          .limit(1);
+
+        if (error) throw error;
+        moodResult = (data?.[0] ?? null) as SymptomLog | null;
+      } catch (moodError) {
+        console.warn("Voice assistant mood fetch failed", moodError);
+        if (!failureMessage) {
+          failureMessage =
+            language === "hi"
+              ? "आज की मन:स्थिति नहीं मिली।"
+              : "Mood entry for today could not be loaded.";
         }
       }
+
+      try {
+        const { data, error } = await supabaseClient
+          .from("nutrition_logs")
+          .select(
+            "id,meal_type,calories,protein_g,iron_mg,calcium_mg,folic_acid_mcg,notes,logged_at"
+          )
+          .eq("user_id", user.id)
+          .gte("logged_at", start)
+          .lt("logged_at", end)
+          .order("logged_at", { ascending: true });
+
+        if (error) throw error;
+        mealsResult = (data ?? []) as NutritionLog[];
+      } catch (mealError) {
+        console.warn("Voice assistant meals fetch failed", mealError);
+        if (!failureMessage) {
+          failureMessage =
+            language === "hi"
+              ? "आज के भोजन डेटा में समस्या है।"
+              : "Unable to load meal logs for today.";
+        }
+      }
+
+      if (cancelled) {
+        return;
+      }
+
+      setProfile(profileResult);
+      setTodayMood(moodResult);
+      setTodayMeals(mealsResult);
+      setContextError(failureMessage);
+      setContextLoading(false);
     };
 
-    hydrateProfile();
+    void fetchContext();
 
     return () => {
-      isMounted = false;
+      cancelled = true;
     };
-  }, [user?.id]);
+  }, [language, user?.id]);
 
   const displayName = useMemo(() => {
-    if (user?.name) {
-      return user.name.split(" ")[0];
+    const fromUser = user?.name?.trim().split(" ")[0];
+    if (fromUser) {
+      return fromUser;
+    }
+    const fromProfile = profile?.full_name?.trim().split(" ")[0];
+    if (fromProfile) {
+      return fromProfile;
     }
     return language === "hi" ? "माँ" : "Mom";
-  }, [language, user?.name]);
+  }, [language, profile?.full_name, user?.name]);
 
-  const personalizedInstructions = useMemo(() => {
-    const lines: string[] = [
-      "You are MomCare's realtime pregnancy voice companion.",
+  const moodSummary = useMemo(
+    () => buildMoodSummary(todayMood, language),
+    [language, todayMood]
+  );
+
+  const mealSummaries = useMemo(
+    () => buildMealSummaries(todayMeals, language),
+    [language, todayMeals]
+  );
+
+  const totalCalories = useMemo(
+    () => sumMealCalories(todayMeals),
+    [todayMeals]
+  );
+
+  const mealInstructionSummary = useMemo(() => {
+    if (!todayMeals.length) {
+      return "";
+    }
+
+    const descriptors = todayMeals.slice(0, 3).map((meal) => {
+      const label = meal.meal_type
+        ? titleCase(meal.meal_type)
+        : language === "hi"
+          ? "भोजन"
+          : "Meal";
+      const calories = typeof meal.calories === "number"
+        ? `${Math.round(meal.calories)} kcal`
+        : language === "hi"
+          ? "कैलोरी नहीं"
+          : "kcal unknown";
+      return `${label} ${calories}`;
+    });
+
+    return descriptors.join(", ");
+  }, [language, todayMeals]);
+
+  const todayLabel = useMemo(() => formatDateLabel(new Date(), language), [language]);
+  const dueDateLabel = useMemo(
+    () => formatDisplayDate(profile?.due_date, language),
+    [language, profile?.due_date]
+  );
+  const pregnancyStartLabel = useMemo(
+    () => formatDisplayDate(profile?.pregnancy_start_date, language),
+    [language, profile?.pregnancy_start_date]
+  );
+
+  const sessionInstructions = useMemo(() => {
+    const lines: string[] = [];
+
+    lines.push(
       language === "hi"
-        ? "Speak in warm, respectful Hindi that is easy to follow."
-        : "Speak in warm, caring English that is easy to follow.",
-      `Address the user as ${displayName}.`,
-      "Offer empathetic, culturally aware guidance tailored to pregnancy wellbeing.",
-      "Encourage contacting healthcare professionals for urgent or concerning symptoms.",
-    ];
+        ? "आप MomCare की विनम्र हिंदी बोलने वाली सहायक हैं जो गर्भवती माताओं की देखभाल में मदद करती हैं।"
+        : "You are MomCare's polite, warm English-speaking companion supporting a pregnant mother."
+    );
+
+    lines.push(
+      language === "hi"
+        ? `आज की तारीख ${todayLabel} है।`
+        : `Today is ${todayLabel}.`
+    );
+
+    lines.push(
+      language === "hi"
+        ? `${displayName} नाम से संबोधित करें और हमेशा सम्मानजनक स्वर रखें।`
+        : `Address her as ${displayName} and keep a respectful tone.`
+    );
+
+    lines.push(
+      language === "hi"
+        ? "चिकित्सकीय किसी भी सलाह में डॉक्टर या दाई से संपर्क करने की अनुशंसा अवश्य करें।"
+        : "For any medical concern, advise her to consult healthcare professionals."
+    );
 
     if (profile?.pregnancy_week) {
       lines.push(
-        `The user is in pregnancy week ${profile.pregnancy_week}. Weave in tips relevant to this stage.`
+        language === "hi"
+          ? `वह गर्भावस्था के सप्ताह ${profile.pregnancy_week} में हैं, उसी चरण की ज़रूरतों पर ध्यान दें।`
+          : `She is in pregnancy week ${profile.pregnancy_week}; tailor guidance to this stage.`
       );
     }
 
     if (profile?.trimester) {
       lines.push(
-        `Focus on trimester ${profile.trimester} needs when suggesting care routines.`
+        language === "hi"
+          ? `वर्तमान त्रैमास ${profile.trimester} है, संबंधित टिप्स साझा करें।`
+          : `Her current trimester is ${profile.trimester}; weave in trimester-appropriate tips.`
       );
     }
 
-    if (profile?.due_date) {
-      lines.push(`Estimated due date: ${profile.due_date}.`);
+    if (pregnancyStartLabel) {
+      lines.push(
+        language === "hi"
+          ? `गर्भ की अनुमानित शुरुआत ${pregnancyStartLabel} को हुई।`
+          : `Pregnancy likely started around ${pregnancyStartLabel}.`
+      );
     }
 
-    if (profile?.preferences && typeof profile.preferences === "object") {
-      const preferences = profile.preferences as Record<string, unknown>;
-      const preferredTone = preferences.tone;
-      if (typeof preferredTone === "string") {
-        lines.push(`Maintain a ${preferredTone} tone as requested.`);
-      }
+    if (dueDateLabel) {
+      lines.push(
+        language === "hi"
+          ? `अनुमानित ड्यू डेट ${dueDateLabel} है।`
+          : `Estimated due date is ${dueDateLabel}.`
+      );
     }
 
-    return lines.join(" ");
-  }, [displayName, language, profile]);
+    if (moodSummary) {
+      lines.push(
+        language === "hi"
+          ? `आज की मन:स्थिति जानकारी: ${moodSummary} इसे सहानुभूति से स्वीकार करें।`
+          : `Today's mood log: ${moodSummary} Acknowledge it with empathy.`
+      );
+    } else {
+      lines.push(
+        language === "hi"
+          ? "आज मन:स्थिति दर्ज नहीं है; आवश्यक लगे तो नम्रता से पूछें।"
+          : "No mood log today; ask gently how she is feeling if helpful."
+      );
+    }
+
+    if (todayMeals.length) {
+      const roundedCalories = Math.round(totalCalories);
+      const caloriePhrase = roundedCalories > 0
+        ? `${roundedCalories} kcal`
+        : language === "hi"
+          ? "कैलोरी दर्ज नहीं"
+          : "calories not logged";
+
+      lines.push(
+        language === "hi"
+          ? `आज दर्ज भोजन: ${mealInstructionSummary}. कुल अनुमानित कैलोरी ${caloriePhrase} है।`
+          : `Meals logged today: ${mealInstructionSummary}. Estimated calories ${caloriePhrase}.`
+      );
+    } else {
+      lines.push(
+        language === "hi"
+          ? "आज भोजन लॉग नहीं है; पोषण पर कोमलता से प्रेरित करें।"
+          : "No meals logged today; encourage gentle, attainable nutrition tips."
+      );
+    }
+
+    lines.push(
+      language === "hi"
+        ? "जब नवीनतम दिशानिर्देश, समाचार या स्थान से जुड़ी जानकारी चाहिए हो तो web_search टूल से संक्षिप्त प्रश्न पूछें और स्रोतों का उल्लेख करें।"
+        : "Use the web_search tool for up-to-date guidance, news, or location-specific questions. Send concise queries and cite leading sources."
+    );
+
+    lines.push(
+      language === "hi"
+        ? "प्रतिक्रियाएँ अधिकतर तीन वाक्यों में रखें, जब तक उपयोगकर्ता अधिक विस्तार न माँगे।"
+        : "Keep responses to roughly three sentences unless she asks for more detail."
+    );
+
+    lines.push(
+      language === "hi"
+        ? "यदि जानकारी अधूरी लगे तो पहले सम्मानपूर्वक स्पष्टता प्राप्त करें।"
+        : "If information is missing, politely ask follow-up questions before advising."
+    );
+
+    if (user?.id) {
+      lines.push(`User ID: ${user.id}.`);
+    }
+
+    const compiled = lines.join(" ");
+    return compiled.trim().length
+      ? compiled
+      : language === "hi"
+        ? "आप MomCare की सहायक हैं।"
+        : "You are MomCare's assistant.";
+  }, [
+    displayName,
+    language,
+    mealInstructionSummary,
+    pregnancyStartLabel,
+    profile?.pregnancy_week,
+    profile?.trimester,
+    dueDateLabel,
+    moodSummary,
+    todayMeals.length,
+    todayLabel,
+    totalCalories,
+    user?.id,
+  ]);
 
   const {
     status,
     transcripts,
     partialAssistantText,
-    isMuted,
     isAssistantSpeaking,
     isUserSpeaking,
     error: voiceError,
-    sessionDetails,
     connect,
     disconnect,
-    toggleMute,
     remoteStreamUrl,
   } = useRealtimeVoice({
     language,
-    instructions: personalizedInstructions,
+    instructions: sessionInstructions,
   });
+
+  const contextSummaryRows = useMemo(() => {
+    const rows: { id: string; label: string; value: string }[] = [];
+
+    if (profile?.pregnancy_week) {
+      rows.push({
+        id: "preg-week",
+        label: language === "hi" ? "गर्भ सप्ताह" : "Pregnancy week",
+        value: `${profile.pregnancy_week}`,
+      });
+    }
+
+    if (profile?.trimester) {
+      rows.push({
+        id: "trimester",
+        label: language === "hi" ? "त्रैमास" : "Trimester",
+        value: `${profile.trimester}`,
+      });
+    }
+
+    if (pregnancyStartLabel) {
+      rows.push({
+        id: "preg-start",
+        label: language === "hi" ? "गर्भ शुरुआत" : "Pregnancy start",
+        value: pregnancyStartLabel,
+      });
+    }
+
+    if (dueDateLabel) {
+      rows.push({
+        id: "due-date",
+        label: language === "hi" ? "अनुमानित ड्यू डेट" : "Estimated due date",
+        value: dueDateLabel,
+      });
+    }
+
+    if (moodSummary) {
+      rows.push({
+        id: "mood",
+        label: language === "hi" ? "आज की मन:स्थिति" : "Mood today",
+        value: moodSummary,
+      });
+    }
+
+    if (mealSummaries.length) {
+      rows.push({
+        id: "meals",
+        label: language === "hi" ? "भोजन लॉग" : "Meals logged",
+        value: mealSummaries.join("\n"),
+      });
+
+      const roundedCalories = Math.round(totalCalories);
+      const calorieValue = roundedCalories > 0
+        ? `${roundedCalories} kcal`
+        : language === "hi"
+          ? "कैलोरी उपलब्ध नहीं"
+          : "Calories not logged";
+
+      rows.push({
+        id: "calories",
+        label: language === "hi" ? "अनुमानित कैलोरी" : "Estimated calories",
+        value: calorieValue,
+      });
+    }
+
+    return rows;
+  }, [
+    dueDateLabel,
+    language,
+    mealSummaries,
+    moodSummary,
+    pregnancyStartLabel,
+    profile?.pregnancy_week,
+    profile?.trimester,
+    totalCalories,
+  ]);
 
   React.useEffect(() => {
     if (!transcripts.length && !partialAssistantText) {
@@ -444,12 +656,7 @@ function VoiceAssistant({
 
   const connecting = status === "connecting";
   const connected = status === "connected";
-  const connectionBadgeLabel = connecting
-    ? "Connecting"
-    : connected
-    ? "Connected"
-    : "Offline";
-  const errorMessage = voiceError ?? profileError;
+  const errorMessage = voiceError;
   const isActivationActive =
     connected && (isAssistantSpeaking || isUserSpeaking);
   const primaryDisabled = connecting || !user?.id;
@@ -469,41 +676,6 @@ function VoiceAssistant({
     void connect().catch(() => undefined);
   };
 
-  const personalizationSummary = useMemo(() => {
-    if (profileLoading) {
-      return language === "hi"
-        ? "आपकी प्रोफ़ाइल लोड हो रही है..."
-        : "Loading your profile details...";
-    }
-
-    if (!profile) {
-      return language === "hi"
-        ? "हम आपके अनुभव को व्यक्तिगत बनाने के लिए प्रोफ़ाइल बनाए रखते हैं।"
-        : "We use your pregnancy profile to personalise every session.";
-    }
-
-    const facts: string[] = [];
-    if (profile.pregnancy_week) {
-      facts.push(`Week ${profile.pregnancy_week}`);
-    }
-    if (profile.trimester) {
-      facts.push(`Trimester ${profile.trimester}`);
-    }
-    if (profile.due_date) {
-      const parsed = new Date(profile.due_date);
-      const dueLabel = Number.isNaN(parsed.getTime())
-        ? profile.due_date
-        : parsed.toLocaleDateString();
-      facts.push(`Due ${dueLabel}`);
-    }
-
-    return facts.length
-      ? facts.join(" • ")
-      : language === "hi"
-      ? "व्यक्तिगत विवरण तैयार हैं।"
-      : "Personalization ready.";
-  }, [language, profile, profileLoading]);
-
   return (
     <View style={styles.voiceContainer}>
       <View style={styles.voiceHeroCard}>
@@ -518,7 +690,7 @@ function VoiceAssistant({
           ]}
         >
           <Ionicons
-            name={connected ? (isMuted ? "mic-off" : "mic") : "mic-outline"}
+            name={connected ? "mic" : "mic-outline"}
             size={64}
             color={colors.surface}
           />
@@ -527,67 +699,13 @@ function VoiceAssistant({
         <Text style={styles.voiceTitle}>Voice Assistant</Text>
         <Text style={styles.voiceSubtitle}>
           {connected
-            ? `Hi ${displayName}, I am ready to listen.`
-            : "Talk naturally with your AI pregnancy companion."}
+            ? language === "hi"
+              ? `${displayName} जी, मैं ध्यान से सुन रही हूँ।`
+              : `I'm listening, ${displayName}.`
+            : language === "hi"
+              ? "बस बटन दबाएं और चर्चा शुरू करें।"
+              : "Tap start and speak naturally."}
         </Text>
-
-        <View style={styles.voiceStatusRow}>
-          <View
-            style={[
-              styles.voiceStatusChip,
-              connected && styles.voiceStatusChipActive,
-              connecting && styles.voiceStatusChipConnecting,
-            ]}
-          >
-            <Ionicons
-              name={connected ? "radio" : "ellipse-outline"}
-              size={16}
-              color={connected ? colors.primary : colors.textSecondary}
-            />
-            <Text
-              style={[
-                styles.voiceStatusChipText,
-                (connected || connecting) && styles.voiceStatusChipTextActive,
-              ]}
-            >
-              {connectionBadgeLabel}
-            </Text>
-          </View>
-
-          <View
-            style={[
-              styles.voiceStatusChip,
-              isMuted && styles.voiceStatusChipMuted,
-            ]}
-          >
-            <Ionicons
-              name={isMuted ? "volume-mute" : "volume-high"}
-              size={16}
-              color={isMuted ? colors.danger : colors.textSecondary}
-            />
-            <Text
-              style={[
-                styles.voiceStatusChipText,
-                isMuted && styles.voiceStatusChipTextDanger,
-              ]}
-            >
-              {isMuted ? "Muted" : "Live"}
-            </Text>
-          </View>
-
-          {sessionDetails && (
-            <View style={styles.voiceStatusChip}>
-              <Ionicons
-                name="hardware-chip-outline"
-                size={16}
-                color={colors.textSecondary}
-              />
-              <Text style={styles.voiceStatusChipText}>
-                {sessionDetails.model}
-              </Text>
-            </View>
-          )}
-        </View>
 
         <Pressable
           onPress={handlePrimaryAction}
@@ -633,8 +751,12 @@ function VoiceAssistant({
             <Text style={styles.voiceEmptyTitle}>Realtime conversation</Text>
             <Text style={styles.voiceEmptyText}>
               {connected
-                ? "Start speaking whenever you are ready."
-                : "Press start to begin a personalised voice session."}
+                ? language === "hi"
+                  ? "जब चाहें बोलना शुरू करें।"
+                  : "Start speaking whenever you like."
+                : language === "hi"
+                  ? "प्रारंभ बटन दबाकर बात करें।"
+                  : "Press start to begin chatting."}
             </Text>
           </View>
         ) : (
@@ -650,38 +772,29 @@ function VoiceAssistant({
         )}
       </View>
 
-      {connected && (
-        <View style={styles.voiceControls}>
-          <Pressable
-            onPress={toggleMute}
-            style={({ pressed }) => [
-              styles.voiceControlButton,
-              pressed && styles.voiceControlButtonPressed,
-            ]}
-          >
-            <Ionicons
-              name={isMuted ? "mic-off" : "mic"}
-              size={20}
-              color={colors.primary}
-            />
-            <Text style={styles.voiceControlLabel}>
-              {isMuted ? "Unmute" : "Mute"}
-            </Text>
-          </Pressable>
-
-          <Pressable
-            onPress={() => void disconnect()}
-            style={({ pressed }) => [
-              styles.voiceControlButton,
-              styles.voiceControlButtonDanger,
-              pressed && styles.voiceControlButtonPressed,
-            ]}
-          >
-            <Ionicons name="close-circle" size={20} color={colors.surface} />
-            <Text style={styles.voiceControlLabelDanger}>End</Text>
-          </Pressable>
-        </View>
-      )}
+      <View style={styles.voiceContextCard}>
+        <Text style={styles.voiceContextTitle}>
+          {language === "hi" ? "आज का संदर्भ" : "Today's context"}
+        </Text>
+        {contextLoading ? (
+          <ActivityIndicator color={colors.primary} size="small" />
+        ) : contextError ? (
+          <Text style={styles.voiceContextError}>{contextError}</Text>
+        ) : contextSummaryRows.length ? (
+          contextSummaryRows.map((row) => (
+            <View key={row.id} style={styles.voiceContextRow}>
+              <Text style={styles.voiceContextLabel}>{row.label}</Text>
+              <Text style={styles.voiceContextValue}>{row.value}</Text>
+            </View>
+          ))
+        ) : (
+          <Text style={styles.voiceContextValue}>
+            {language === "hi"
+              ? "आज तक कोई वैयक्तिक डेटा दर्ज नहीं।"
+              : "No personalised data captured yet today."}
+          </Text>
+        )}
+      </View>
 
       {remoteStreamUrl && (
         <RTCView
@@ -698,17 +811,6 @@ function VoiceAssistant({
           <Text style={styles.voiceErrorText}>{errorMessage}</Text>
         </View>
       )}
-
-      <View style={styles.voicePersonalization}>
-        <Text style={styles.voicePersonalizationTitle}>Personalization</Text>
-        {profileLoading ? (
-          <ActivityIndicator color={colors.primary} size="small" />
-        ) : (
-          <Text style={styles.voicePersonalizationText}>
-            {personalizationSummary}
-          </Text>
-        )}
-      </View>
     </View>
   );
 }
@@ -951,7 +1053,7 @@ export default function AssistantScreen() {
               draft={draft}
               onChangeDraft={setDraft}
               onSend={handleSend}
-              onToggleImagePicker={() => {}}
+              onToggleImagePicker={() => { }}
               isSubmitting={isProcessing}
               hasImage={!!selectedImage}
             />
@@ -1009,31 +1111,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.lg,
     gap: spacing.md,
   },
-  messageBubble: {
-    maxWidth: "85%",
-    borderRadius: radii.lg,
-    backgroundColor: colors.surface,
-    padding: spacing.md,
-    flexDirection: "row",
-    alignItems: "flex-end",
-    gap: spacing.sm,
-    ...shadows.soft,
-  },
-  userBubble: {
-    alignSelf: "flex-end",
-    backgroundColor: colors.primary,
-  },
-  messageBubbleContent: {
-    flex: 1,
-  },
-  timestamp: {
-    fontSize: typography.caption,
-    color: colors.textSecondary,
-    marginTop: spacing.xs,
-  },
-  userTimestamp: {
-    color: "rgba(255, 255, 255, 0.7)",
-  },
   loadingContainer: {
     paddingVertical: spacing.lg,
     alignItems: "center",
@@ -1059,59 +1136,6 @@ const styles = StyleSheet.create({
   },
   keyboardAvoid: {
     width: "100%",
-  },
-  inputContainer: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    gap: spacing.md,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: "#F5D6DB",
-    backgroundColor: colors.background,
-  },
-  inputWrapper: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "flex-end",
-    gap: spacing.sm,
-    borderRadius: radii.md,
-    backgroundColor: colors.surface,
-    paddingHorizontal: spacing.md,
-    ...shadows.soft,
-  },
-  imagePickerButton: {
-    padding: spacing.sm,
-    borderRadius: radii.sm,
-  },
-  imagePickerButtonPressed: {
-    opacity: 0.7,
-  },
-  imagePickerButtonActive: {
-    backgroundColor: colors.mutedPink,
-  },
-  input: {
-    flex: 1,
-    minHeight: 44,
-    maxHeight: 110,
-    paddingVertical: spacing.sm,
-    fontSize: typography.body,
-    color: colors.textPrimary,
-  },
-  sendButton: {
-    width: 44,
-    height: 44,
-    borderRadius: radii.md,
-    backgroundColor: colors.primary,
-    alignItems: "center",
-    justifyContent: "center",
-    ...shadows.soft,
-  },
-  sendButtonPressed: {
-    transform: [{ scale: 0.95 }],
-  },
-  sendButtonDisabled: {
-    opacity: 0.5,
   },
   imagePreviewBanner: {
     flexDirection: "row",
@@ -1223,42 +1247,6 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: "rgba(255, 255, 255, 0.7)",
   },
-  voiceStatusRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "center",
-    gap: spacing.sm,
-  },
-  voiceStatusChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.xs,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: radii.full,
-    backgroundColor: colors.mutedPink,
-  },
-  voiceStatusChipActive: {
-    backgroundColor: colors.lilac,
-  },
-  voiceStatusChipConnecting: {
-    backgroundColor: colors.peach,
-  },
-  voiceStatusChipMuted: {
-    backgroundColor: "rgba(239, 154, 154, 0.35)",
-  },
-  voiceStatusChipText: {
-    fontSize: typography.caption,
-    color: colors.textSecondary,
-  },
-  voiceStatusChipTextActive: {
-    color: colors.textPrimary,
-    fontWeight: "600",
-  },
-  voiceStatusChipTextDanger: {
-    color: colors.danger,
-    fontWeight: "600",
-  },
   voicePrimaryButton: {
     marginTop: spacing.md,
     flexDirection: "row",
@@ -1315,36 +1303,34 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: "center",
   },
-  voiceControls: {
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: spacing.lg,
-  },
-  voiceControlButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.xs,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    borderRadius: radii.full,
+  voiceContextCard: {
+    padding: spacing.md,
+    borderRadius: radii.lg,
     backgroundColor: colors.surface,
+    gap: spacing.xs,
     ...shadows.soft,
   },
-  voiceControlButtonDanger: {
-    backgroundColor: colors.danger,
+  voiceContextTitle: {
+    fontSize: typography.label,
+    fontWeight: "600",
+    color: colors.textPrimary,
   },
-  voiceControlButtonPressed: {
-    transform: [{ scale: 0.97 }],
+  voiceContextRow: {
+    marginTop: spacing.xs,
   },
-  voiceControlLabel: {
+  voiceContextLabel: {
     fontSize: typography.caption,
     fontWeight: "600",
-    color: colors.primary,
+    color: colors.textSecondary,
   },
-  voiceControlLabelDanger: {
+  voiceContextValue: {
     fontSize: typography.caption,
-    fontWeight: "600",
-    color: colors.surface,
+    color: colors.textPrimary,
+    marginTop: 2,
+  },
+  voiceContextError: {
+    fontSize: typography.caption,
+    color: colors.danger,
   },
   voiceErrorBanner: {
     flexDirection: "row",
@@ -1358,21 +1344,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: typography.caption,
     color: colors.surface,
-  },
-  voicePersonalization: {
-    padding: spacing.md,
-    borderRadius: radii.md,
-    backgroundColor: colors.mutedPink,
-    gap: spacing.xs,
-  },
-  voicePersonalizationTitle: {
-    fontSize: typography.label,
-    fontWeight: "600",
-    color: colors.textPrimary,
-  },
-  voicePersonalizationText: {
-    fontSize: typography.caption,
-    color: colors.textSecondary,
   },
   voiceHiddenAudio: {
     position: "absolute",

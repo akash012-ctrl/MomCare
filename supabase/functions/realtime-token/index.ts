@@ -86,6 +86,12 @@ User ID: ${user.id}.`;
                 model: model,
                 voice: voice,
                 modalities: ["text", "audio"],
+                tools: [
+                    {
+                        type: "web_search",
+                    },
+                ],
+                tool_choice: "auto",
                 instructions: instructions,
                 turn_detection: {
                     type: "server_vad",
