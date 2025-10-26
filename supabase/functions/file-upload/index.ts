@@ -18,13 +18,32 @@ interface UploadRequest {
     fileBase64: string;
     analysisType: "meal" | "posture" | "general" | "ultrasound";
     bucket?: string;
+    mimeType?: string;
+    mealType?: string;
+}
+
+const DEFAULT_MEAL_TYPE = "unspecified";
+
+function sanitizeFileName(fileName: string): string {
+    return fileName.replace(/[^a-zA-Z0-9_.-]/g, "_");
+}
+
+function numericOrNull(value: unknown): number | null {
+    if (typeof value === "number" && Number.isFinite(value)) {
+        return value;
+    }
+    if (typeof value === "string") {
+        const parsed = Number(value);
+        return Number.isFinite(parsed) ? parsed : null;
+    }
+    return null;
 }
 
 async function uploadFileToStorage(
     supabase: ReturnType<typeof createClient>,
-    userId: string,
-    fileName: string,
+    storagePath: string,
     fileBase64: string,
+    mimeType: string | undefined,
     bucket: string
 ): Promise<string> {
     const binaryString = atob(fileBase64);
@@ -33,12 +52,12 @@ async function uploadFileToStorage(
         bytes[i] = binaryString.charCodeAt(i);
     }
 
-    const storagePath = `${userId}/${Date.now()}-${fileName}`;
+    const contentType = mimeType && mimeType.trim().length > 0 ? mimeType : "image/jpeg";
 
     const { error: uploadError } = await supabase.storage
         .from(bucket)
         .upload(storagePath, bytes, {
-            contentType: `image/${fileName.split(".").pop()}`,
+            contentType,
             cacheControl: "3600",
         });
 
@@ -149,6 +168,68 @@ async function storeAnalysisResult(
     return data.id;
 }
 
+function averageFoodConfidence(foods: unknown): number | null {
+    if (!Array.isArray(foods) || foods.length === 0) {
+        return null;
+    }
+    const total = foods.reduce((sum, item) => {
+        const record = (item ?? {}) as Record<string, unknown>;
+        const confidence = numericOrNull(record.confidence);
+        return sum + (confidence ?? 0);
+    }, 0);
+    return total > 0 ? total / foods.length : null;
+}
+
+function buildMealNutritionPayload(params: {
+    analysis: Record<string, any>;
+    userId: string;
+    analysisId: string;
+    imageUrl: string;
+    storagePath: string;
+    tokensUsed: number;
+    modelUsed: string;
+    mealTypeOverride?: string;
+}) {
+    const { analysis, userId, analysisId, imageUrl, storagePath, tokensUsed, modelUsed, mealTypeOverride } = params;
+    const foods = Array.isArray(analysis?.foods) ? analysis.foods : [];
+    const macros = analysis?.macros ?? {};
+    const micros = analysis?.micros ?? {};
+    const mealType = mealTypeOverride && mealTypeOverride.trim().length > 0 ? mealTypeOverride : analysis?.meal_type ?? DEFAULT_MEAL_TYPE;
+
+    const calories = numericOrNull(analysis?.calories);
+    const protein = numericOrNull(macros?.protein);
+    const carbs = numericOrNull(macros?.carbs);
+    const fat = numericOrNull(macros?.fat);
+    const iron = numericOrNull(micros?.iron);
+    const calcium = numericOrNull(micros?.calcium);
+    const folate = numericOrNull(micros?.folic_acid) ?? numericOrNull(micros?.folate);
+    const water = numericOrNull(analysis?.water_ml) ?? 0;
+
+    return {
+        user_id: userId,
+        meal_type: mealType,
+        food_items: foods,
+        calories,
+        protein_g: protein,
+        carbs_g: carbs,
+        fat_g: fat,
+        iron_mg: iron,
+        calcium_mg: calcium,
+        folic_acid_mcg: folate,
+        water_intake_ml: water,
+        notes: typeof analysis?.summary === "string" ? analysis.summary : null,
+        image_url: imageUrl,
+        storage_path: storagePath,
+        analysis_id: analysisId,
+        analysis_source: "ai_image",
+        analysis_confidence: averageFoodConfidence(foods),
+        model_used: modelUsed,
+        tokens_used: numericOrNull(tokensUsed),
+        raw_analysis: analysis ?? {},
+        logged_at: new Date().toISOString(),
+    };
+}
+
 Deno.serve(async (req) => {
     if (req.method === "OPTIONS") {
         return new Response("ok", {
@@ -174,6 +255,8 @@ Deno.serve(async (req) => {
                 userId,
                 fileName,
                 fileBase64,
+                mimeType,
+                mealType,
                 analysisType,
                 bucket = "meal-images",
             } = body;
@@ -190,12 +273,13 @@ Deno.serve(async (req) => {
                 );
             }
 
-            const storagePath = `${userId}/${Date.now()}-${fileName}`;
+            const safeFileName = sanitizeFileName(fileName);
+            const storagePath = `${userId}/${Date.now()}-${safeFileName}`;
             const imageUrl = await uploadFileToStorage(
                 supabase,
-                userId,
-                fileName,
+                storagePath,
                 fileBase64,
+                mimeType,
                 bucket
             );
 
@@ -215,6 +299,32 @@ Deno.serve(async (req) => {
                 tokensUsed
             );
 
+            let nutritionLogId: string | null = null;
+            if (analysisType === "meal") {
+                const nutritionPayload = buildMealNutritionPayload({
+                    analysis,
+                    userId,
+                    analysisId: resultId,
+                    imageUrl,
+                    storagePath,
+                    tokensUsed,
+                    modelUsed: "gpt-4o",
+                    mealTypeOverride: mealType,
+                });
+
+                const { data: nutritionLog, error: nutritionError } = await supabase
+                    .from("nutrition_logs")
+                    .insert(nutritionPayload)
+                    .select("id")
+                    .single();
+
+                if (nutritionError) {
+                    throw nutritionError;
+                }
+
+                nutritionLogId = nutritionLog.id;
+            }
+
             return new Response(
                 JSON.stringify({
                     success: true,
@@ -222,6 +332,7 @@ Deno.serve(async (req) => {
                     imageUrl,
                     analysis,
                     tokensUsed,
+                    nutritionLogId,
                     timestamp: new Date().toISOString(),
                 }),
                 {

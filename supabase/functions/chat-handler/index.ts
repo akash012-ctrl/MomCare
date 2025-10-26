@@ -13,6 +13,13 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2.50.0";
 
+declare const Deno: {
+    env: {
+        get(name: string): string | undefined;
+    };
+    serve: (handler: (req: Request) => Response | Promise<Response>) => void;
+};
+
 const CORS_HEADERS = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
@@ -24,6 +31,7 @@ interface ChatRequest {
     userId: string;
     conversationId?: string;
     includeMemory?: boolean;
+    attachmentIds?: string[];
 }
 
 interface Message {
@@ -32,6 +40,144 @@ interface Message {
 }
 
 const MOTHERLY_SYSTEM_PROMPT = `You are MomCare, a supportive AI pregnancy companion. Be warm, empathetic, and concise. Include disclaimers for medical advice. Reference pregnancy week if available.`;
+const SOURCE_INSTRUCTION = `Use the supplied patient documents when relevant. Cite each reference inline using [S1], [S2], etc., and keep the explanation grounded in the provided evidence.`;
+
+interface AttachmentRecord {
+    id: string;
+    title: string | null;
+    summary: string | null;
+    file_url: string;
+    mime_type?: string | null;
+    metadata?: Record<string, unknown> | null;
+}
+
+interface SourceEntry {
+    id: string;
+    title: string | null;
+    summary: string | null;
+    fileUrl: string;
+    citation: string;
+    metadata?: Record<string, unknown> | null;
+}
+
+function requireEnv(name: string): string {
+    const value = Deno.env.get(name);
+    if (!value) {
+        throw new Error(`${name} not configured`);
+    }
+    return value;
+}
+
+async function createQueryEmbedding(text: string, apiKey: string): Promise<number[] | null> {
+    if (!text.trim()) return null;
+
+    const response = await fetch("https://api.openai.com/v1/embeddings", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+            model: "text-embedding-3-small",
+            input: text.slice(0, 4000),
+        }),
+    });
+
+    if (!response.ok) {
+        const error = await response.text();
+        console.error("Embedding generation failed", error);
+        return null;
+    }
+
+    const data = await response.json();
+    const embedding = data.data?.[0]?.embedding as number[] | undefined;
+    return embedding ?? null;
+}
+
+async function fetchAttachmentRecords(
+    supabase: ReturnType<typeof createClient>,
+    userId: string,
+    attachmentIds: string[]
+): Promise<AttachmentRecord[]> {
+    if (!attachmentIds.length) return [];
+
+    const { data, error } = await supabase
+        .from("conversation_documents")
+        .select("id,title,summary,file_url,mime_type,metadata")
+        .in("id", attachmentIds)
+        .eq("user_id", userId);
+
+    if (error) {
+        console.error("Failed to load attachment records", error);
+        return [];
+    }
+
+    return (data ?? []) as AttachmentRecord[];
+}
+
+async function matchRelevantDocuments(
+    supabase: ReturnType<typeof createClient>,
+    params: {
+        userId: string;
+        conversationId: string;
+        embedding: number[] | null;
+    }
+): Promise<AttachmentRecord[]> {
+    if (!params.embedding) return [];
+
+    const { data, error } = await supabase.rpc("match_conversation_documents", {
+        p_user_id: params.userId,
+        p_conversation_id: params.conversationId,
+        p_query_embedding: params.embedding,
+        p_match_count: 4,
+        p_similarity_threshold: 0.68,
+    });
+
+    if (error) {
+        console.error("match_conversation_documents failed", error);
+        return [];
+    }
+
+    return (data ?? []).map((row: Record<string, unknown>) => ({
+        id: row.document_id as string,
+        title: (row.title as string) ?? null,
+        summary: (row.summary as string) ?? null,
+        file_url: (row.file_url as string) ?? "",
+        metadata: undefined,
+    }));
+}
+
+function buildSourcesSection(records: AttachmentRecord[]): { prompt: string; sources: SourceEntry[] } {
+    if (!records.length) {
+        return { prompt: "", sources: [] };
+    }
+
+    const sources = records.map((record, index) => {
+        const citation = `S${index + 1}`;
+        return {
+            id: record.id,
+            title: record.title,
+            summary: record.summary,
+            fileUrl: record.file_url,
+            citation,
+            metadata: record.metadata,
+        } satisfies SourceEntry;
+    });
+
+    const prompt = sources
+        .map((source) => {
+            const summary = source.summary ?? "";
+            const keyFindings = Array.isArray(source.metadata?.key_findings)
+                ? (source.metadata?.key_findings as string[]).join("; ")
+                : "";
+            const additional = [summary, keyFindings].filter(Boolean).join("\n");
+            const label = source.title ?? "Patient document";
+            return `${source.citation}. ${label}\n${additional}`.trim();
+        })
+        .join("\n\n");
+
+    return { prompt, sources };
+}
 
 async function getMemoryContext(
     supabase: ReturnType<typeof createClient>,
@@ -101,10 +247,13 @@ async function storeMessage(
 
 async function callOpenAI(
     messages: Message[],
-    systemPrompt: string
+    systemPrompt: string,
+    supportingContext: string | null,
+    openaiApiKey: string
 ): Promise<{ content: string; tokens: number }> {
-    const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
-    if (!openaiApiKey) throw new Error("OPENAI_API_KEY not configured");
+    const combinedSystemPrompt = supportingContext
+        ? `${systemPrompt}\n\n${SOURCE_INSTRUCTION}\n\nSupporting evidence:\n${supportingContext}`
+        : systemPrompt;
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
@@ -115,7 +264,7 @@ async function callOpenAI(
         body: JSON.stringify({
             model: "gpt-4o-mini",
             messages: [
-                { role: "system", content: systemPrompt },
+                { role: "system", content: combinedSystemPrompt },
                 ...messages,
             ],
             temperature: 0.7,
@@ -147,7 +296,13 @@ Deno.serve(async (req) => {
 
     try {
         const body = (await req.json()) as ChatRequest;
-        const { messages, userId, conversationId, includeMemory = true } = body;
+        const {
+            messages,
+            userId,
+            conversationId,
+            includeMemory = true,
+            attachmentIds: rawAttachmentIds,
+        } = body;
 
         if (!userId || !messages || messages.length === 0) {
             return new Response(
@@ -161,11 +316,15 @@ Deno.serve(async (req) => {
             );
         }
 
-        const supabaseUrl = Deno.env.get("SUPABASE_URL");
-        const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-        if (!supabaseUrl || !supabaseKey) {
-            throw new Error("Missing Supabase configuration");
-        }
+        const attachmentIds = Array.isArray(rawAttachmentIds)
+            ? rawAttachmentIds
+                .map((id) => (typeof id === "string" ? id.trim() : ""))
+                .filter((id) => id.length > 0)
+            : [];
+
+        const supabaseUrl = requireEnv("SUPABASE_URL");
+        const supabaseKey = requireEnv("SUPABASE_SERVICE_ROLE_KEY");
+        const openaiApiKey = requireEnv("OPENAI_API_KEY");
 
         const supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -173,6 +332,51 @@ Deno.serve(async (req) => {
             supabase,
             userId,
             conversationId
+        );
+
+        if (attachmentIds.length) {
+            const { error: updateError } = await supabase
+                .from("conversation_documents")
+                .update({ conversation_id: finalConversationId })
+                .in("id", attachmentIds)
+                .eq("user_id", userId);
+
+            if (updateError) {
+                console.warn("Failed to tag attachments with conversation", updateError);
+            }
+        }
+
+        const userMessage = messages[messages.length - 1];
+        const latestUserMessage = [...messages]
+            .reverse()
+            .find((message) => message.role === "user") ?? messages[messages.length - 1];
+
+        const queryEmbedding = await createQueryEmbedding(
+            latestUserMessage?.content ?? "",
+            openaiApiKey
+        );
+
+        const matchedRecords = await matchRelevantDocuments(supabase, {
+            userId,
+            conversationId: finalConversationId,
+            embedding: queryEmbedding,
+        });
+
+        const combinedIds = Array.from(
+            new Set([
+                ...attachmentIds,
+                ...matchedRecords.map((record) => record.id),
+            ])
+        ).filter((id) => id);
+
+        const attachmentContextRecords = await fetchAttachmentRecords(
+            supabase,
+            userId,
+            combinedIds
+        );
+
+        const { prompt: sourcesPrompt, sources } = buildSourcesSection(
+            attachmentContextRecords
         );
 
         let memoryContext = "";
@@ -191,17 +395,20 @@ Deno.serve(async (req) => {
 
         const { content: assistantMessage, tokens } = await callOpenAI(
             recentMessages,
-            systemPrompt
+            systemPrompt,
+            sourcesPrompt || null,
+            openaiApiKey
         );
 
-        const userMessage = messages[messages.length - 1];
-        await storeMessage(
-            supabase,
-            userId,
-            finalConversationId,
-            "user",
-            userMessage.content
-        );
+        if (userMessage.role === "user") {
+            await storeMessage(
+                supabase,
+                userId,
+                finalConversationId,
+                "user",
+                userMessage.content
+            );
+        }
         await storeMessage(
             supabase,
             userId,
@@ -217,6 +424,14 @@ Deno.serve(async (req) => {
                 message: assistantMessage,
                 tokensUsed: tokens,
                 timestamp: new Date().toISOString(),
+                sources: sources.map((source) => ({
+                    id: source.id,
+                    title: source.title,
+                    summary: source.summary,
+                    fileUrl: source.fileUrl,
+                    citation: `[${source.citation}]`,
+                    metadata: source.metadata ?? undefined,
+                })),
             }),
             {
                 headers: { ...CORS_HEADERS, "Content-Type": "application/json" },

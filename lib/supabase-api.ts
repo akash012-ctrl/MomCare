@@ -17,6 +17,7 @@ export interface ChatRequest {
     conversationId?: string;
     includeMemory?: boolean;
     language?: "en" | "hi";
+    attachmentIds?: string[];
 }
 
 export interface ChatResponse {
@@ -25,6 +26,16 @@ export interface ChatResponse {
     message: string;
     tokensUsed: number;
     timestamp: string;
+    sources?: ChatAnswerSource[];
+}
+
+export interface ChatAnswerSource {
+    id: string;
+    title?: string | null;
+    summary?: string | null;
+    fileUrl: string;
+    citation: string;
+    metadata?: Record<string, unknown>;
 }
 
 // Realtime voice uses WebRTC with ephemeral token - no separate STT/TTS functions needed
@@ -135,7 +146,26 @@ export interface FileUploadResponse {
     imageUrl: string;
     analysis: Record<string, unknown>;
     tokensUsed: number;
+    nutritionLogId?: string | null;
     timestamp: string;
+}
+
+export interface UploadChatAttachmentParams {
+    userId: string;
+    conversationId?: string;
+    fileName: string;
+    fileBase64: string;
+    mimeType: string;
+}
+
+export interface ChatAttachmentUploadResponse {
+    success: boolean;
+    documentId: string;
+    fileUrl: string;
+    title?: string | null;
+    summary?: string | null;
+    keyFindings?: string[];
+    metadata?: Record<string, unknown>;
 }
 
 export interface ImageAnalysisResult {
@@ -169,7 +199,8 @@ export async function sendChatMessage(
     userId: string,
     conversationId?: string,
     includeMemory: boolean = true,
-    language: "en" | "hi" = "en"
+    language: "en" | "hi" = "en",
+    attachmentIds: string[] = []
 ): Promise<ChatResponse> {
     try {
         const { data, error } = await supabase.functions.invoke('chat-handler', {
@@ -179,6 +210,7 @@ export async function sendChatMessage(
                 conversationId,
                 includeMemory,
                 language,
+                attachmentIds,
             },
         });
 
@@ -527,22 +559,35 @@ export async function updateProfileData(
  * @param bucket Storage bucket
  * @returns Analysis result with image URL
  */
-export async function uploadAndAnalyzeImage(
-    userId: string,
-    fileName: string,
-    fileBase64: string,
-    analysisType: 'meal' | 'posture' | 'general' | 'ultrasound',
-    bucket: string = 'meal-images'
-): Promise<FileUploadResponse> {
+interface UploadAndAnalyzeImageParams {
+    userId: string;
+    fileName: string;
+    fileBase64: string;
+    mimeType: string;
+    analysisType: 'meal' | 'posture' | 'general' | 'ultrasound';
+    mealType?: string;
+    bucket?: string;
+}
+
+export async function uploadAndAnalyzeImage({
+    userId,
+    fileName,
+    fileBase64,
+    mimeType,
+    analysisType,
+    mealType,
+    bucket = 'meal-images'
+}: UploadAndAnalyzeImageParams): Promise<FileUploadResponse> {
     try {
-        const { data, error } = await supabase.functions.invoke('file-upload', {
+        const { data, error } = await supabase.functions.invoke('file-upload?action=upload', {
             body: {
                 userId,
                 fileName,
                 fileBase64,
+                mimeType,
+                mealType,
                 analysisType,
                 bucket,
-                action: 'upload',
             },
         });
 
@@ -550,6 +595,20 @@ export async function uploadAndAnalyzeImage(
         return data as FileUploadResponse;
     } catch (error) {
         console.error('Upload and analyze image error:', error);
+        throw error;
+    }
+}
+
+export async function uploadChatAttachment(params: UploadChatAttachmentParams): Promise<ChatAttachmentUploadResponse> {
+    try {
+        const { data, error } = await supabase.functions.invoke('chat-attachments', {
+            body: params,
+        });
+
+        if (error) throw error;
+        return data as ChatAttachmentUploadResponse;
+    } catch (error) {
+        console.error('Upload chat attachment error:', error);
         throw error;
     }
 }

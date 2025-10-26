@@ -151,6 +151,7 @@ export interface ImageUploadResponse {
     storagePath: string;
     imageId: string;
     error?: string;
+    nutritionLogId?: string | null;
 }
 
 /**

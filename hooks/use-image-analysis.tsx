@@ -74,12 +74,18 @@ export function useImageAnalysis(): UseImageAnalysisReturn {
         setState((prev) => ({ ...prev, progress: 10 }));
 
         // Call Edge Function via supabase-api (single unified call)
-        const response = await uploadAndAnalyzeImage(
-          user.id,
-          base64,
+        const extension = typeof mimeType === "string" && mimeType.includes("/")
+          ? mimeType.split("/").pop() ?? "jpg"
+          : "jpg";
+        const fileName = `meal-${Date.now()}.${extension}`;
+
+        const response = await uploadAndAnalyzeImage({
+          userId: user.id,
+          fileName,
+          fileBase64: base64,
           mimeType,
-          analysisType
-        );
+          analysisType,
+        });
 
         setState((prev) => ({ ...prev, progress: 70 }));
 

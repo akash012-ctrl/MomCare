@@ -1,6 +1,6 @@
 import { MotiView } from "moti";
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import Markdown from "react-native-markdown-display";
 
 import { MotherhoodTheme } from "@/constants/theme";
@@ -111,6 +111,9 @@ export function MessageBubble({ message, isUser }: MessageBubbleProps) {
     const text = getMessageText(message);
     const timestamp = getMessageTimestamp(message);
     const markdownStyles = getMarkdownStyles(isUser);
+    const sources = Array.isArray(message.sources)
+        ? message.sources.filter((source) => Boolean(source?.citation && source?.fileUrl))
+        : [];
 
     return (
         <MotiView
@@ -121,6 +124,37 @@ export function MessageBubble({ message, isUser }: MessageBubbleProps) {
         >
             <View style={styles.messageBubbleContent}>
                 <Markdown style={markdownStyles}>{text}</Markdown>
+                {!isUser && sources.length > 0 && (
+                    <View style={styles.sourcesSection}>
+                        <Text style={styles.sourcesLabel}>Sources</Text>
+                        <View style={styles.sourceBadgeRow}>
+                            {sources.map((source) => (
+                                <Pressable
+                                    key={source.id}
+                                    style={styles.sourceBadge}
+                                    onPress={() => {
+                                        if (!source.fileUrl) return;
+                                        Linking.openURL(source.fileUrl).catch((error) => {
+                                            console.warn("Failed to open source", error);
+                                        });
+                                    }}
+                                >
+                                    <Text style={styles.sourceBadgeCitation}>
+                                        {source.citation}
+                                    </Text>
+                                    {source.title ? (
+                                        <Text
+                                            style={styles.sourceBadgeTitle}
+                                            numberOfLines={1}
+                                        >
+                                            {source.title}
+                                        </Text>
+                                    ) : null}
+                                </Pressable>
+                            ))}
+                        </View>
+                    </View>
+                )}
                 <Text style={[styles.timestamp, isUser && styles.userTimestamp]}>
                     {timestamp.toLocaleTimeString([], {
                         hour: "2-digit",
@@ -149,6 +183,37 @@ const styles = StyleSheet.create({
     },
     messageBubbleContent: {
         flex: 1,
+    },
+    sourcesSection: {
+        marginTop: spacing.sm,
+        gap: spacing.xs,
+    },
+    sourcesLabel: {
+        fontSize: typography.caption,
+        fontWeight: "600",
+        color: colors.textSecondary,
+    },
+    sourceBadgeRow: {
+        flexDirection: "row",
+        flexWrap: "wrap",
+        gap: spacing.sm,
+    },
+    sourceBadge: {
+        paddingVertical: spacing.xs,
+        paddingHorizontal: spacing.sm,
+        borderRadius: radii.sm,
+        backgroundColor: colors.mutedPink,
+        maxWidth: "100%",
+    },
+    sourceBadgeCitation: {
+        fontSize: typography.label,
+        fontWeight: "600",
+        color: colors.primary,
+    },
+    sourceBadgeTitle: {
+        marginTop: 2,
+        fontSize: typography.caption,
+        color: colors.textPrimary,
     },
     timestamp: {
         fontSize: typography.caption,

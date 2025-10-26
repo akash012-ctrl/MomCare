@@ -15,9 +15,10 @@ interface ChatInputProps {
     draft: string;
     onChangeDraft: (value: string) => void;
     onSend: () => void;
-    onToggleImagePicker: () => void;
+    onPickAttachment: () => void;
     isSubmitting?: boolean;
-    hasImage?: boolean;
+    hasAttachments?: boolean;
+    isAttachmentUploading?: boolean;
     placeholder?: string;
     maxLength?: number;
 }
@@ -27,11 +28,11 @@ const DEFAULT_MAX_LENGTH = 800;
 
 const { colors, radii, shadows, spacing, typography } = MotherhoodTheme;
 
-function buildImagePickerStyles(disabled: boolean, hasImage: boolean) {
+function buildAttachmentButtonStyles(disabled: boolean, hasAttachment: boolean) {
     return ({ pressed }: PressableStateCallbackType) => [
-        styles.imagePickerButton,
-        pressed && !disabled && styles.imagePickerButtonPressed,
-        hasImage && styles.imagePickerButtonActive,
+        styles.attachmentButton,
+        pressed && !disabled && styles.attachmentButtonPressed,
+        hasAttachment && styles.attachmentButtonActive,
     ];
 }
 
@@ -47,18 +48,26 @@ export function ChatInput({
     draft,
     onChangeDraft,
     onSend,
-    onToggleImagePicker,
+    onPickAttachment,
     isSubmitting = false,
-    hasImage = false,
+    hasAttachments = false,
+    isAttachmentUploading = false,
     placeholder = DEFAULT_PLACEHOLDER,
     maxLength = DEFAULT_MAX_LENGTH,
 }: ChatInputProps) {
     const trimmedDraft = draft.trim();
-    const sendDisabled = isSubmitting || (!trimmedDraft && !hasImage);
+    const sendDisabled =
+        isSubmitting ||
+        isAttachmentUploading ||
+        (!trimmedDraft && !hasAttachments);
 
-    const imagePickerStyles = useMemo(
-        () => buildImagePickerStyles(isSubmitting, hasImage),
-        [isSubmitting, hasImage],
+    const attachmentButtonStyles = useMemo(
+        () =>
+            buildAttachmentButtonStyles(
+                isSubmitting || isAttachmentUploading,
+                hasAttachments
+            ),
+        [isSubmitting, isAttachmentUploading, hasAttachments],
     );
 
     const sendButtonStyles = useMemo(
@@ -72,15 +81,15 @@ export function ChatInput({
         <View style={styles.inputContainer}>
             <View style={styles.inputWrapper}>
                 <Pressable
-                    onPress={onToggleImagePicker}
-                    disabled={isSubmitting}
-                    style={imagePickerStyles}
-                    accessibilityLabel="Attach image"
+                    onPress={onPickAttachment}
+                    disabled={isSubmitting || isAttachmentUploading}
+                    style={attachmentButtonStyles}
+                    accessibilityLabel="Attach file"
                 >
                     <Ionicons
-                        name={hasImage ? "image" : "image-outline"}
+                        name={hasAttachments ? "attach" : "attach-outline"}
                         size={28}
-                        color={hasImage ? colors.primary : colors.textSecondary}
+                        color={hasAttachments ? colors.primary : colors.textSecondary}
                     />
                 </Pressable>
                 <TextInput
@@ -135,14 +144,14 @@ const styles = StyleSheet.create({
         paddingHorizontal: spacing.md,
         ...shadows.soft,
     },
-    imagePickerButton: {
+    attachmentButton: {
         padding: spacing.sm,
         borderRadius: radii.sm,
     },
-    imagePickerButtonPressed: {
+    attachmentButtonPressed: {
         opacity: 0.7,
     },
-    imagePickerButtonActive: {
+    attachmentButtonActive: {
         backgroundColor: colors.mutedPink,
     },
     input: {
