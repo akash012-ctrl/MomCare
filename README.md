@@ -1,8 +1,44 @@
 # MomCare Expo
 
-MomCare is an Expo-based prenatal companion that brings evidence-backed guidance, conversational AI, and culturally-resonant support to busy urban Indian mothers. The app blends Retrieval-Augmented Generation, multimodal inputs, and personalised tracking so proactive prenatal care feels achievable.
+MomCare is an Expo-based prenatal companion that brings evidence-backed guidance, conversational AI, and culturally-resonant support to busy urban mothers. It wraps clinical insight in warmth so a mom juggling checkups, family expectations, and late-night worries always finds a reassuring voice that speaks her language. The app blends Retrieval-Augmented Generation, multimodal inputs, and personalised tracking so proactive prenatal care feels achievable.
 
-Supabase Edge Functions host every piece of server logic, giving us a single secure plane for OpenAI credentials, Row Level Security, and future analytics while the mobile client stays lean.
+Supabase Edge Functions host every piece of server logic, giving us a single secure plane for OpenAI credentials, Row Level Security, and future analytics while the mobile client stays lean. This unified backend keeps validation, compliance, and performance anchored in one place, ensuring the experience stays reliable even as new features roll out.
+
+## System Requirements
+
+- Node.js 18.18 LTS or later (`node --version`)
+- npm 10.3 or later (`npm --version`)
+- Expo CLI 6.3 or later (`npm install -g expo-cli` and `npx expo --version`)
+- Java Development Kit 17 with Android SDK 34 for Android builds; Xcode 15+ for iOS simulation (macOS only)
+- Physical device or simulator/emulator with microphone access for voice features
+- 64-bit Windows, macOS, or Linux machine with at least 8 GB RAM and 10 GB free disk space
+
+## Getting Started
+
+1. Confirm prerequisites are installed and at the versions above. Install the Expo Go or Dev Client app on any companion devices you plan to test with.
+2. Install dependencies from the project root:
+
+    ```bash
+    npm install
+    ```
+
+3. Configure environment variables (via `.env`, Expo secrets, or CI variables):
+
+  - `EXPO_PUBLIC_SUPABASE_URL`
+  - `EXPO_PUBLIC_SUPABASE_KEY`
+  - `SUPABASE_SERVICE_ROLE_KEY`
+  - `OPENAI_API_KEY`
+  - Optional: `DATABASE_URL` for local Supabase CLI tasks.
+
+4. Start the Expo development server:
+
+    ```bash
+    npm start
+    ```
+
+  Press `i` for iOS simulator, `a` for Android emulator, or scan the QR code with the Expo client.
+
+5. Deploy or update Edge Functions with the Supabase CLI whenever backend code changes.
 
 ## Working Capabilities
 
@@ -128,33 +164,6 @@ supabase/functions/     Edge Function source
 docs/                   Feature status and implementation notes
 ```
 
-## Getting Started
-
-1. Install prerequisites: Node.js 18+, npm 10+, Expo CLI, and the Expo Go or Dev Client app on your device.
-2. Install dependencies:
-
-  ```bash
-  npm install
-  ```
-
-3. Configure environment variables (via `.env`, Expo secrets, or CI variables):
-
-  - `EXPO_PUBLIC_SUPABASE_URL`
-  - `EXPO_PUBLIC_SUPABASE_KEY`
-  - `SUPABASE_SERVICE_ROLE_KEY`
-  - `OPENAI_API_KEY`
-  - Optional: `DATABASE_URL` for local Supabase CLI tasks.
-
-4. Start the Expo development server:
-
-  ```bash
-  npm start
-  ```
-
-  Press `i` for iOS simulator, `a` for Android emulator, or scan the QR code with the Expo client.
-
-5. Deploy or update Edge Functions with the Supabase CLI whenever backend code changes.
-
 ## Useful Scripts
 
 - `npm start` – Expo development server.
@@ -177,3 +186,10 @@ docs/                   Feature status and implementation notes
 - Automated integration tests for Edge Functions and tracking workflows.
 
 For status snapshots and deeper implementation details, see `docs/feature_status_docs/FEATURE_STATUS.md` and `docs/feature_status_docs/QUICK_REFERENCE.md`.
+
+## Future Enhancements
+
+- Deeper clinician collaboration features with secure message review and escalation loops.
+- Adaptive care plans that adjust prompts and reminders based on trimester milestones.
+- Offline-first journaling so moms can capture insights without a signal and sync later.
+- Peer support moments powered by moderated community spotlights and shared victories.

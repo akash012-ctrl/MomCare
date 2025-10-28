@@ -1003,7 +1003,7 @@ const VoiceConversationView = React.forwardRef<
             {messages.length === 0 ? (
                 <View style={styles.voiceEmptyTranscripts}>
                     <Ionicons name="chatbubble-ellipses-outline" size={36} color={colors.primary} />
-                    <Text style={styles.voiceEmptyTitle}>Realtime conversation</Text>
+
                     <Text style={styles.voiceEmptyText}>
                         {connected
                             ? language === "hi"

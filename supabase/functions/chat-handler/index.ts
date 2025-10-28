@@ -60,8 +60,22 @@ interface SourceEntry {
     metadata?: Record<string, unknown> | null;
 }
 
-function requireEnv(name: string): string {
-    const value = Deno.env.get(name);
+async function requireEnv(name: string, supabase?: ReturnType<typeof createClient>): Promise<string> {
+    // Try to get from environment first
+    let value = Deno.env.get(name);
+
+    // If not in environment and it's OPENAI_API_KEY, try to get from database
+    if (!value && name === "OPENAI_API_KEY" && supabase) {
+        try {
+            const { data, error } = await supabase.rpc('get_secret', { secret_key: name });
+            if (!error && data) {
+                value = data;
+            }
+        } catch (error) {
+            console.error(`Failed to get ${name} from database:`, error);
+        }
+    }
+
     if (!value) {
         throw new Error(`${name} not configured`);
     }
@@ -322,11 +336,12 @@ Deno.serve(async (req) => {
                 .filter((id) => id.length > 0)
             : [];
 
-        const supabaseUrl = requireEnv("SUPABASE_URL");
-        const supabaseKey = requireEnv("SUPABASE_SERVICE_ROLE_KEY");
-        const openaiApiKey = requireEnv("OPENAI_API_KEY");
+        const supabaseUrl = await requireEnv("SUPABASE_URL");
+        const supabaseKey = await requireEnv("SUPABASE_SERVICE_ROLE_KEY");
 
         const supabase = createClient(supabaseUrl, supabaseKey);
+
+        const openaiApiKey = await requireEnv("OPENAI_API_KEY", supabase);
 
         const finalConversationId = await ensureConversation(
             supabase,

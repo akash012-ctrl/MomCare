@@ -1,5 +1,6 @@
 import { nanoid } from "nanoid/non-secure";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import InCallManager from "react-native-incall-manager";
 import {
     MediaStream,
     RTCPeerConnection,
@@ -350,6 +351,9 @@ export function useRealtimeVoice({
             if (remoteStreamRef.current) {
                 remoteStreamRef.current.getTracks().forEach((track) => track.stop());
             }
+
+            // Stop InCallManager and restore normal audio routing
+            InCallManager.stop();
         } finally {
             dataChannelRef.current = null;
             dataChannelReadyRef.current = false;
@@ -519,6 +523,10 @@ export function useRealtimeVoice({
                     } else {
                         setRemoteStreamUrlState(null);
                     }
+
+                    // Route audio to speaker for voice assistant
+                    InCallManager.start({ media: "audio", ringback: "" });
+                    InCallManager.setForceSpeakerphoneOn(true);
                 }
             };
 
