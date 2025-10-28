@@ -1,6 +1,7 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import * as DocumentPicker from "expo-document-picker";
-import * as FileSystem from "expo-file-system";
+import { File } from "expo-file-system";
+import * as FileSystem from "expo-file-system/legacy";
 import { MotiView } from "moti";
 import React, {
     useCallback,
@@ -79,7 +80,8 @@ function isSupportedAttachmentType(mimeType: string): boolean {
 }
 
 async function readFileAsBase64(uri: string): Promise<string> {
-    return FileSystem.readAsStringAsync(uri, { encoding: "base64" });
+    const file = new File(uri);
+    return await file.base64();
 }
 
 async function getAssetSize(uri: string, fallback?: number): Promise<number> {

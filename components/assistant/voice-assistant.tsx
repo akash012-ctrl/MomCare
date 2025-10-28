@@ -14,7 +14,6 @@ import {
 } from "react-native";
 import { RTCView } from "react-native-webrtc";
 
-import { MessageBubble } from "@/components/assistant/message-bubble";
 import type { AssistantMessage } from "@/components/assistant/types";
 import { MotherhoodTheme } from "@/constants/theme";
 import { useRealtimeVoice } from "@/hooks/use-realtime-voice";
@@ -789,32 +788,6 @@ function useVoiceConnectionControls(options: VoiceConnectionOptions): VoiceConne
     };
 }
 
-function buildVoiceMessages(
-    transcripts: VoiceTranscript[],
-    partialAssistantText: string,
-): AssistantMessage[] {
-    const items: AssistantMessage[] = transcripts.map((entry) => ({
-        id: entry.id,
-        role: entry.role,
-        content: entry.text,
-        metadata: { timestamp: new Date(entry.timestamp).toISOString() },
-    }));
-
-    if (partialAssistantText.trim().length > 0) {
-        items.push({
-            id: "assistant-live",
-            role: "assistant",
-            content: partialAssistantText,
-            metadata: {
-                timestamp: new Date().toISOString(),
-                live: true,
-            },
-        });
-    }
-
-    return items;
-}
-
 interface VoiceAssistantProps {
     user: User | null;
     language: Language;
@@ -829,18 +802,6 @@ export function VoiceAssistant({ user, language }: VoiceAssistantProps): React.R
         language,
         instructions: derived.sessionInstructions,
     });
-
-    const voiceMessages = useMemo(
-        () => buildVoiceMessages(voice.transcripts, voice.partialAssistantText),
-        [voice.transcripts, voice.partialAssistantText],
-    );
-
-    useEffect(() => {
-        if (!voiceMessages.length) {
-            return;
-        }
-        transcriptsRef.current?.scrollToEnd({ animated: true });
-    }, [voiceMessages.length]);
 
     return (
         <View style={styles.voiceContainer}>
@@ -859,7 +820,6 @@ export function VoiceAssistant({ user, language }: VoiceAssistantProps): React.R
 
             <VoiceConversationView
                 ref={transcriptsRef}
-                messages={voiceMessages}
                 connected={voice.connected}
                 language={language}
                 remoteStreamUrl={voice.remoteStreamUrl}
@@ -988,7 +948,6 @@ function VoicePrimaryButtonContent({
 }
 
 interface VoiceConversationViewProps {
-    messages: AssistantMessage[];
     connected: boolean;
     language: Language;
     remoteStreamUrl: string | null;
@@ -997,34 +956,22 @@ interface VoiceConversationViewProps {
 const VoiceConversationView = React.forwardRef<
     FlatList<AssistantMessage>,
     VoiceConversationViewProps
->(function VoiceConversationView({ messages, connected, language, remoteStreamUrl }, ref) {
+>(function VoiceConversationView({ connected, language, remoteStreamUrl }, ref) {
     return (
         <View style={styles.voiceContentArea}>
-            {messages.length === 0 ? (
-                <View style={styles.voiceEmptyTranscripts}>
-                    <Ionicons name="chatbubble-ellipses-outline" size={36} color={colors.primary} />
+            <View style={styles.voiceEmptyTranscripts}>
+                <Ionicons name="chatbubble-ellipses-outline" size={36} color={colors.primary} />
 
-                    <Text style={styles.voiceEmptyText}>
-                        {connected
-                            ? language === "hi"
-                                ? "जब चाहें बोलना शुरू करें।"
-                                : "Start speaking whenever you like."
-                            : language === "hi"
-                                ? "प्रारंभ बटन दबाकर बात करें।"
-                                : "Press start to begin chatting."}
-                    </Text>
-                </View>
-            ) : (
-                <FlatList
-                    ref={ref}
-                    data={messages}
-                    keyExtractor={(item) => item.id}
-                    renderItem={({ item }) => (
-                        <MessageBubble message={item} isUser={item.role === "user"} />
-                    )}
-                    contentContainerStyle={styles.voiceTranscriptList}
-                />
-            )}
+                <Text style={styles.voiceEmptyText}>
+                    {connected
+                        ? language === "hi"
+                            ? "मैं आपको सुन रही हूँ। बस बोलना शुरू करें।"
+                            : "I'm listening. Just start speaking."
+                        : language === "hi"
+                            ? "प्रारंभ बटन दबाकर बात करें।"
+                            : "Press start to begin chatting."}
+                </Text>
+            </View>
 
             {remoteStreamUrl && (
                 <RTCView
