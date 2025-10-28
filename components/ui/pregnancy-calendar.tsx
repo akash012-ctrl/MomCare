@@ -50,36 +50,36 @@ const getMarkedDates = (startDateString?: string) => {
     if (isFirst && isLast) {
       // Single day
       dates[dateString] = {
-        color: colors.primary,
+        color: colors.secondary,
         textColor: colors.surface,
         marked: true,
-        dotColor: isToday ? colors.accent : "transparent",
+        dotColor: isToday ? colors.warning : "transparent",
       };
     } else if (isFirst) {
       // Start of period
       dates[dateString] = {
         startingDay: true,
-        color: colors.primary,
+        color: colors.secondary,
         textColor: colors.surface,
         marked: true,
-        dotColor: isToday ? colors.accent : "transparent",
+        dotColor: isToday ? colors.warning : "transparent",
       };
     } else if (isLast) {
       // End of period
       dates[dateString] = {
         endingDay: true,
-        color: colors.primary,
+        color: colors.secondary,
         textColor: colors.surface,
         marked: true,
-        dotColor: isToday ? colors.accent : "transparent",
+        dotColor: isToday ? colors.warning : "transparent",
       };
     } else {
       // Middle of period
       dates[dateString] = {
-        color: colors.primary,
+        color: colors.secondary,
         textColor: colors.surface,
         marked: true,
-        dotColor: isToday ? colors.accent : "transparent",
+        dotColor: isToday ? colors.warning : "transparent",
       };
     }
 
@@ -133,17 +133,17 @@ export const PregnancyCalendar: React.FC<PregnancyCalendarProps> = ({
             calendarBackground: colors.surface,
             textSectionTitleColor: colors.textPrimary,
             textSectionTitleDisabledColor: colors.textSecondary,
-            selectedDayBackgroundColor: colors.primary,
+            selectedDayBackgroundColor: colors.secondary,
             selectedDayTextColor: colors.surface,
-            todayTextColor: colors.primary,
+            todayTextColor: colors.secondary,
             dayTextColor: colors.textPrimary,
             textDisabledColor: colors.textSecondary,
-            dotColor: colors.primary,
-            selectedDotColor: colors.accent,
-            arrowColor: colors.primary,
+            dotColor: colors.secondary,
+            selectedDotColor: colors.warning,
+            arrowColor: colors.secondary,
             disabledArrowColor: colors.textSecondary,
             monthTextColor: colors.textPrimary,
-            indicatorColor: colors.primary,
+            indicatorColor: colors.secondary,
             textDayFontFamily: "System",
             textMonthFontFamily: "System",
             textDayHeaderFontFamily: "System",
@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   weekText: {
-    color: colors.primary,
+    color: colors.secondary,
     fontSize: 18,
     fontWeight: "700",
   },

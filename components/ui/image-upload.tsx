@@ -113,7 +113,7 @@ export function ImageUpload({
               pressed && styles.clearButtonPressed,
             ]}
           >
-            <Ionicons name="close-circle" size={32} color={colors.primary} />
+            <Ionicons name="close-circle" size={32} color={colors.secondary} />
           </Pressable>
         </View>
         <Text style={styles.selectedText}>Image selected & ready</Text>
@@ -134,10 +134,10 @@ export function ImageUpload({
           ]}
         >
           {isLoading ? (
-            <ActivityIndicator color={colors.primary} size="small" />
+            <ActivityIndicator color={colors.secondary} size="small" />
           ) : (
             <>
-              <Ionicons name="camera" size={24} color={colors.primary} />
+              <Ionicons name="camera" size={24} color={colors.secondary} />
               <Text style={styles.buttonText}>Take Photo</Text>
             </>
           )}
@@ -153,10 +153,10 @@ export function ImageUpload({
           ]}
         >
           {isLoading ? (
-            <ActivityIndicator color={colors.primary} size="small" />
+            <ActivityIndicator color={colors.secondary} size="small" />
           ) : (
             <>
-              <Ionicons name="image" size={24} color={colors.primary} />
+              <Ionicons name="image" size={24} color={colors.secondary} />
               <Text style={styles.buttonText}>Pick Image</Text>
             </>
           )}
@@ -198,7 +198,7 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: typography.label,
     fontWeight: "600",
-    color: colors.primary,
+    color: colors.secondary,
   },
   selectedContainer: {
     alignItems: "center",

@@ -67,7 +67,7 @@ function MotherhoodTabBarItem({
             <Feather
               name={iconName}
               size={24}
-              color={isFocused ? colors.primary : colors.textSecondary}
+              color={isFocused ? colors.secondary : colors.textSecondary}
             />
           </MotiView>
           <Text style={[styles.label, isFocused && styles.labelActive]}>
@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   labelActive: {
-    color: colors.primary,
+    color: colors.secondary,
   },
   indicator: {
     position: "absolute",

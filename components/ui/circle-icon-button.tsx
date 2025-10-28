@@ -21,7 +21,7 @@ export function CircleIconButton({
   onPress,
   size = 24,
   color = colors.textPrimary,
-  backgroundColor = colors.primary,
+  backgroundColor = colors.secondary,
   disabled = false,
   style,
 }: CircleIconButtonProps) {

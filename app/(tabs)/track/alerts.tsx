@@ -6,11 +6,11 @@ import {
   FlatList,
   Pressable,
   RefreshControl,
-  SafeAreaView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useAppAlert } from "@/components/ui/app-alert";
 import { MotherhoodTheme } from "@/constants/theme";
@@ -216,7 +216,7 @@ export default function Alerts() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       {/* Header */}
       <View style={styles.header}>
         <Pressable onPress={() => router.back()}>

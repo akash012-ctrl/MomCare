@@ -98,7 +98,7 @@ const TYPE_STYLES: Record<
   AlertType,
   { icon: keyof typeof Feather.glyphMap; color: string }
 > = {
-  info: { icon: "info", color: MotherhoodTheme.colors.primary },
+  info: { icon: "info", color: MotherhoodTheme.colors.secondary },
   success: { icon: "check-circle", color: MotherhoodTheme.colors.success },
   warning: { icon: "alert-triangle", color: MotherhoodTheme.colors.warning },
   error: { icon: "x-circle", color: MotherhoodTheme.colors.danger },
@@ -109,19 +109,19 @@ const TONE_STYLES: Record<
   { backgroundColor: string; borderColor: string; textColor: string }
 > = {
   primary: {
-    backgroundColor: MotherhoodTheme.colors.primary,
-    borderColor: MotherhoodTheme.colors.primary,
-    textColor: MotherhoodTheme.colors.textPrimary,
+    backgroundColor: MotherhoodTheme.colors.secondary,
+    borderColor: MotherhoodTheme.colors.secondary,
+    textColor: "#FFFFFF",
   },
   secondary: {
     backgroundColor: MotherhoodTheme.colors.surface,
-    borderColor: MotherhoodTheme.colors.mutedPink,
+    borderColor: MotherhoodTheme.colors.lavender,
     textColor: MotherhoodTheme.colors.textPrimary,
   },
   danger: {
     backgroundColor: MotherhoodTheme.colors.danger,
     borderColor: MotherhoodTheme.colors.danger,
-    textColor: "#fff",
+    textColor: "#FFFFFF",
   },
 };
 

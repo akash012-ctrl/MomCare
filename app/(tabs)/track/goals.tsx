@@ -9,6 +9,7 @@ import {
   Platform,
   Pressable,
   RefreshControl,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -360,100 +361,108 @@ export default function Goals() {
           transparent
           onRequestClose={() => setModalVisible(false)}
         >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>New Goal</Text>
-                <Pressable onPress={() => setModalVisible(false)}>
-                  <Feather name="x" size={24} color={colors.textPrimary} />
-                </Pressable>
-              </View>
-
-              {/* Title */}
-              <View style={styles.modalSection}>
-                <Text style={styles.modalLabel}>Goal Title</Text>
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="e.g., Daily walk for 30 minutes"
-                  placeholderTextColor={colors.textSecondary}
-                  value={title}
-                  onChangeText={setTitle}
-                />
-              </View>
-
-              {/* Category */}
-              <View style={styles.modalSection}>
-                <Text style={styles.modalLabel}>Category</Text>
-                <View style={styles.categoryGrid}>
-                  {GOAL_CATEGORIES.map((cat) => (
-                    <Pressable
-                      key={cat.name}
-                      style={[
-                        styles.categoryCard,
-                        {
-                          backgroundColor:
-                            category === cat.name ? cat.color : colors.surface,
-                        },
-                      ]}
-                      onPress={() => setCategory(cat.name)}
-                    >
-                      <Text style={styles.categoryIcon}>{cat.icon}</Text>
-                      <Text
-                        style={[
-                          styles.categoryName,
-                          category === cat.name && styles.categoryNameActive,
-                        ]}
-                      >
-                        {cat.name}
-                      </Text>
+          <KeyboardAvoidingView
+            behavior={Platform.select({ ios: "padding", android: "height" })}
+            style={{ flex: 1 }}
+            keyboardVerticalOffset={Platform.select({ ios: 0, android: 20 })}
+          >
+            <Pressable style={styles.modalOverlay} onPress={() => setModalVisible(false)}>
+              <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
+                <ScrollView showsVerticalScrollIndicator={false}>
+                  <View style={styles.modalHeader}>
+                    <Text style={styles.modalTitle}>New Goal</Text>
+                    <Pressable onPress={() => setModalVisible(false)}>
+                      <Feather name="x" size={24} color={colors.textPrimary} />
                     </Pressable>
-                  ))}
-                </View>
-              </View>
+                  </View>
 
-              {/* Target & Unit */}
-              <View style={styles.modalSection}>
-                <Text style={styles.modalLabel}>Target</Text>
-                <View style={styles.targetRow}>
-                  <TextInput
-                    style={[styles.textInput, styles.targetInput]}
-                    placeholder="10"
-                    placeholderTextColor={colors.textSecondary}
-                    value={targetValue}
-                    onChangeText={setTargetValue}
-                    keyboardType="number-pad"
-                  />
-                  <TextInput
-                    style={[styles.textInput, styles.unitInput]}
-                    placeholder="times"
-                    placeholderTextColor={colors.textSecondary}
-                    value={unit}
-                    onChangeText={setUnit}
-                  />
-                </View>
-              </View>
+                  {/* Title */}
+                  <View style={styles.modalSection}>
+                    <Text style={styles.modalLabel}>Goal Title</Text>
+                    <TextInput
+                      style={styles.textInput}
+                      placeholder="e.g., Daily walk for 30 minutes"
+                      placeholderTextColor={colors.textSecondary}
+                      value={title}
+                      onChangeText={setTitle}
+                    />
+                  </View>
 
-              {/* Description */}
-              <View style={styles.modalSection}>
-                <Text style={styles.modalLabel}>Description (optional)</Text>
-                <TextInput
-                  style={[styles.textInput, styles.textArea]}
-                  placeholder="Add more details..."
-                  placeholderTextColor={colors.textSecondary}
-                  value={description}
-                  onChangeText={setDescription}
-                  multiline
-                  numberOfLines={3}
-                  textAlignVertical="top"
-                />
-              </View>
+                  {/* Category */}
+                  <View style={styles.modalSection}>
+                    <Text style={styles.modalLabel}>Category</Text>
+                    <View style={styles.categoryGrid}>
+                      {GOAL_CATEGORIES.map((cat) => (
+                        <Pressable
+                          key={cat.name}
+                          style={[
+                            styles.categoryCard,
+                            {
+                              backgroundColor:
+                                category === cat.name ? cat.color : colors.surface,
+                            },
+                          ]}
+                          onPress={() => setCategory(cat.name)}
+                        >
+                          <Text style={styles.categoryIcon}>{cat.icon}</Text>
+                          <Text
+                            style={[
+                              styles.categoryName,
+                              category === cat.name && styles.categoryNameActive,
+                            ]}
+                          >
+                            {cat.name}
+                          </Text>
+                        </Pressable>
+                      ))}
+                    </View>
+                  </View>
 
-              {/* Create Button */}
-              <Pressable style={styles.saveButton} onPress={handleCreateGoal}>
-                <Text style={styles.saveButtonText}>Create Goal</Text>
+                  {/* Target & Unit */}
+                  <View style={styles.modalSection}>
+                    <Text style={styles.modalLabel}>Target</Text>
+                    <View style={styles.targetRow}>
+                      <TextInput
+                        style={[styles.textInput, styles.targetInput]}
+                        placeholder="10"
+                        placeholderTextColor={colors.textSecondary}
+                        value={targetValue}
+                        onChangeText={setTargetValue}
+                        keyboardType="number-pad"
+                      />
+                      <TextInput
+                        style={[styles.textInput, styles.unitInput]}
+                        placeholder="times"
+                        placeholderTextColor={colors.textSecondary}
+                        value={unit}
+                        onChangeText={setUnit}
+                      />
+                    </View>
+                  </View>
+
+                  {/* Description */}
+                  <View style={styles.modalSection}>
+                    <Text style={styles.modalLabel}>Description (optional)</Text>
+                    <TextInput
+                      style={[styles.textInput, styles.textArea]}
+                      placeholder="Add more details..."
+                      placeholderTextColor={colors.textSecondary}
+                      value={description}
+                      onChangeText={setDescription}
+                      multiline
+                      numberOfLines={3}
+                      textAlignVertical="top"
+                    />
+                  </View>
+
+                  {/* Create Button */}
+                  <Pressable style={styles.saveButton} onPress={handleCreateGoal}>
+                    <Text style={styles.saveButtonText}>Create Goal</Text>
+                  </Pressable>
+                </ScrollView>
               </Pressable>
-            </View>
-          </View>
+            </Pressable>
+          </KeyboardAvoidingView>
         </Modal>
       </KeyboardAvoidingView>
     </SafeAreaView>

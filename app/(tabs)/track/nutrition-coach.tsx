@@ -190,10 +190,22 @@ export default function NutritionCoach() {
               <Feather name="arrow-left" size={24} color={colors.textPrimary} />
             </Pressable>
             <Text style={styles.headerTitle}>Nutrition Coach</Text>
-            <Text style={styles.tipsBody}>
-              Meal Logging feature is in progress. there might be some error
-            </Text>
-            <View style={{ width: 24 }} />
+            <Pressable
+              onPress={() => {
+                try {
+                  router.push("/(tabs)/track/meal-logging" as any);
+                } catch (error) {
+                  console.error("Navigation error:", error);
+                  showAlert({
+                    title: "Navigation Error",
+                    message: "Unable to open meal logging. Please try again.",
+                    type: "error",
+                  });
+                }
+              }}
+            >
+              <Feather name="camera" size={24} color={colors.primary} />
+            </Pressable>
           </View>
         </View>
 

@@ -55,10 +55,10 @@ const styles = StyleSheet.create({
     marginRight: spacing.md,
   },
   primary: {
-    backgroundColor: colors.mutedPink,
+    backgroundColor: colors.mint,
   },
   primaryValue: {
-    color: colors.primary,
+    color: colors.success,
   },
   secondary: {
     backgroundColor: colors.lavender,

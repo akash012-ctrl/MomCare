@@ -30,11 +30,11 @@ const styles = StyleSheet.create({
         borderRadius: 20,
         backgroundColor: colors.surface,
         borderWidth: 1,
-        borderColor: `${colors.primary}50`,
+        borderColor: `${colors.secondary}50`,
     },
     chipActive: {
-        backgroundColor: colors.primary,
-        borderColor: colors.primary,
+        backgroundColor: colors.secondary,
+        borderColor: colors.secondary,
     },
     chipText: {
         fontSize: 13,

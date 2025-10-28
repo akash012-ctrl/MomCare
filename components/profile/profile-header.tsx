@@ -15,7 +15,7 @@ export function ProfileHeader({ name, email }: ProfileHeaderProps) {
     return (
         <View style={styles.container}>
             <View style={styles.avatarPlaceholder}>
-                <Feather name="user" size={32} color={colors.primary} />
+                <Feather name="user" size={32} color={colors.secondary} />
             </View>
             <View style={styles.userInfo}>
                 <Text style={styles.userName}>{name}</Text>
@@ -39,7 +39,7 @@ const styles = StyleSheet.create({
         width: 64,
         height: 64,
         borderRadius: 32,
-        backgroundColor: colors.mutedPink,
+        backgroundColor: colors.lavender,
         alignItems: "center",
         justifyContent: "center",
     },

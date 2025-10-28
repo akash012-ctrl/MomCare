@@ -737,7 +737,7 @@ const styles = StyleSheet.create({
     fontSize: typography.label,
   },
   statValue: {
-    color: colors.primary,
+    color: colors.success,
     fontSize: typography.headline,
     fontWeight: "700",
     marginTop: spacing.xs,
@@ -845,7 +845,7 @@ const styles = StyleSheet.create({
   },
   statBox: {
     flex: 1,
-    backgroundColor: colors.lilac,
+    backgroundColor: colors.mint,
     borderRadius: radii.md,
     padding: spacing.md,
     alignItems: "center",
@@ -857,7 +857,7 @@ const styles = StyleSheet.create({
     paddingLeft: spacing.xs,
   },
   bullet: {
-    color: colors.primary,
+    color: colors.success,
     fontSize: typography.body,
     fontWeight: "700",
     width: 20,
@@ -874,7 +874,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   symptomChip: {
-    backgroundColor: colors.lilac,
+    backgroundColor: colors.peach,
     borderRadius: radii.md,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,

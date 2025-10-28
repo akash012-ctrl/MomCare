@@ -101,7 +101,7 @@ async function summarizeImage(
             Authorization: `Bearer ${openaiApiKey}`,
         },
         body: JSON.stringify({
-            model: "gpt-4o",
+            model: "gpt-4o-mini",
             temperature: 0.2,
             max_tokens: 600,
             messages: [
@@ -205,7 +205,7 @@ async function summarizePdf(
                 Authorization: `Bearer ${openaiApiKey}`,
             },
             body: JSON.stringify({
-                model: "gpt-4.1-mini",
+                model: "gpt-4o-mini",
                 temperature: 0.2,
                 max_output_tokens: 900,
                 input: [

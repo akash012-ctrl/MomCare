@@ -68,7 +68,7 @@ const styles = StyleSheet.create({
     },
     calories: {
         fontSize: typography.subtitle,
-        color: colors.primary,
+        color: colors.success,
         fontWeight: "700",
     },
     foods: {

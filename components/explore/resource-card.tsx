@@ -62,7 +62,7 @@ export function ResourceCard({ article, onShare, onSave, isSaved }: ResourceCard
 
             <View style={styles.cardActions}>
                 <TouchableOpacity style={styles.actionButton} onPress={() => onShare(article)}>
-                    <Feather size={16} name="share-2" color={colors.primary} />
+                    <Feather size={16} name="share-2" color={colors.secondary} />
                     <ThemedText style={styles.actionText}>Share</ThemedText>
                 </TouchableOpacity>
 
@@ -73,7 +73,7 @@ export function ResourceCard({ article, onShare, onSave, isSaved }: ResourceCard
                     <Feather
                         size={16}
                         name="bookmark"
-                        color={isSaved ? colors.primary : colors.textSecondary}
+                        color={isSaved ? colors.secondary : colors.textSecondary}
                     />
                     <ThemedText style={[styles.actionText, isSaved && styles.actionTextActive]}>
                         {isSaved ? "Saved" : "Save"}
@@ -144,18 +144,18 @@ const styles = StyleSheet.create({
         paddingHorizontal: 8,
         paddingVertical: 4,
         borderRadius: 4,
-        backgroundColor: `${colors.primary}20`,
+        backgroundColor: `${colors.secondary}20`,
     },
     categoryText: {
         fontSize: 11,
         fontWeight: "600",
-        color: colors.primary,
+        color: colors.secondary,
     },
     cardActions: {
         flexDirection: "row",
         gap: 12,
         borderTopWidth: 1,
-        borderTopColor: `${colors.primary}20`,
+        borderTopColor: `${colors.secondary}20`,
         paddingTop: 10,
     },
     actionButton: {
@@ -167,12 +167,12 @@ const styles = StyleSheet.create({
         borderRadius: 6,
     },
     actionButtonActive: {
-        backgroundColor: `${colors.primary}20`,
+        backgroundColor: `${colors.secondary}20`,
     },
     actionText: {
         fontSize: 12,
         fontWeight: "500",
-        color: colors.primary,
+        color: colors.secondary,
     },
     actionTextActive: {
         fontWeight: "600",

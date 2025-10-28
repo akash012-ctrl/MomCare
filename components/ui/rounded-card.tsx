@@ -30,8 +30,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   primary: {
-    backgroundColor: colors.mutedPink,
-    borderColor: colors.primary,
+    backgroundColor: colors.mint,
+    borderColor: colors.success,
     borderWidth: 1,
   },
   secondary: {

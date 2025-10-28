@@ -17,7 +17,7 @@ export function ProfileMenuItem({ icon, label, onPress, isDestructive }: Profile
     return (
         <Pressable onPress={onPress} style={({ pressed }) => [styles.item, pressed && styles.itemPressed]}>
             <View style={styles.itemLeft}>
-                <Feather name={icon} size={20} color={isDestructive ? "#EF5350" : colors.primary} />
+                <Feather name={icon} size={20} color={isDestructive ? "#EF5350" : colors.secondary} />
                 <Text style={[styles.itemLabel, isDestructive && styles.destructiveLabel]}>{label}</Text>
             </View>
             <Feather name="chevron-right" size={20} color={colors.textSecondary} />

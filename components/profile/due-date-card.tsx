@@ -55,7 +55,7 @@ export function DueDateCard({ pregnancyStartDate, language = 'en' }: DueDateCard
     return (
         <View style={styles.card}>
             <View style={styles.header}>
-                <Text style={styles.icon}>📅</Text>
+
                 <Text style={styles.title}>{t.title}</Text>
             </View>
 
@@ -122,13 +122,13 @@ const styles = StyleSheet.create({
         gap: spacing.md,
     },
     countdownBox: {
-        backgroundColor: colors.lilac,
+        backgroundColor: colors.mint,
         borderRadius: radii.md,
         padding: spacing.md,
         alignItems: 'center',
     },
     countdownNumber: {
-        color: colors.primary,
+        color: colors.success,
         fontSize: 48,
         fontWeight: '700',
     },

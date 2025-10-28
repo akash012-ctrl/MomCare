@@ -30,192 +30,192 @@ export const PregnancyStartDatePicker: React.FC<
   initialName = "",
   isLoading = false,
 }) => {
-  const [modalVisible, setModalVisible] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(initialDate || "");
-  const [displayName, setDisplayName] = useState(initialName);
-  const [hasChanges, setHasChanges] = useState(false);
+    const [modalVisible, setModalVisible] = useState(false);
+    const [selectedDate, setSelectedDate] = useState(initialDate || "");
+    const [displayName, setDisplayName] = useState(initialName);
+    const [hasChanges, setHasChanges] = useState(false);
 
-  useEffect(() => {
-    setSelectedDate(initialDate || "");
-  }, [initialDate]);
+    useEffect(() => {
+      setSelectedDate(initialDate || "");
+    }, [initialDate]);
 
-  const handleDateSelect = (date: string) => {
-    setSelectedDate(date);
-    setHasChanges(true);
-  };
+    const handleDateSelect = (date: string) => {
+      setSelectedDate(date);
+      setHasChanges(true);
+    };
 
-  const handleNameChange = (name: string) => {
-    setDisplayName(name);
-    setHasChanges(true);
-  };
+    const handleNameChange = (name: string) => {
+      setDisplayName(name);
+      setHasChanges(true);
+    };
 
-  const handleSave = () => {
-    if (selectedDate) {
-      onDateChange(selectedDate);
-    }
-    if (displayName !== initialName) {
-      onNameChange(displayName);
-    }
-    setHasChanges(false);
-    setModalVisible(false);
-  };
+    const handleSave = () => {
+      if (selectedDate) {
+        onDateChange(selectedDate);
+      }
+      if (displayName !== initialName) {
+        onNameChange(displayName);
+      }
+      setHasChanges(false);
+      setModalVisible(false);
+    };
 
-  const formatDate = (dateString: string) => {
-    if (!dateString) return "Select date";
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      month: "long",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
+    const formatDate = (dateString: string) => {
+      if (!dateString) return "Select date";
+      const date = new Date(dateString);
+      return date.toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      });
+    };
 
-  const calculateWeek = (dateString: string) => {
-    if (!dateString) return 0;
-    const startDate = new Date(dateString);
-    const today = new Date();
-    const timeDiff = today.getTime() - startDate.getTime();
-    const daysDiff = Math.floor(timeDiff / (1000 * 3600 * 24));
-    return Math.floor(daysDiff / 7) + 1;
-  };
+    const calculateWeek = (dateString: string) => {
+      if (!dateString) return 0;
+      const startDate = new Date(dateString);
+      const today = new Date();
+      const timeDiff = today.getTime() - startDate.getTime();
+      const daysDiff = Math.floor(timeDiff / (1000 * 3600 * 24));
+      return Math.floor(daysDiff / 7) + 1;
+    };
 
-  const pregnancyWeek = calculateWeek(selectedDate);
+    const pregnancyWeek = calculateWeek(selectedDate);
 
-  return (
-    <View>
-      {/* Display Card */}
-      <Pressable
-        style={styles.displayCard}
-        onPress={() => setModalVisible(true)}
-      >
-        <View style={styles.displayContent}>
-          <View style={styles.iconContainer}>
-            <Feather name="calendar" size={28} color={colors.primary} />
-          </View>
-          <View style={styles.displayText}>
-            <Text style={styles.dateValue}>{formatDate(selectedDate)}</Text>
-            {pregnancyWeek > 0 && (
-              <Text style={styles.weekInfo}>Week {pregnancyWeek}</Text>
-            )}
-          </View>
-          <Feather
-            name="chevron-right"
-            size={24}
-            color={colors.textSecondary}
-          />
-        </View>
-      </Pressable>
-
-      {/* Edit Modal */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            {/* Header */}
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Edit Profile</Text>
-              <Pressable onPress={() => setModalVisible(false)}>
-                <Feather name="x" size={24} color={colors.textPrimary} />
-              </Pressable>
+    return (
+      <View>
+        {/* Display Card */}
+        <Pressable
+          style={styles.displayCard}
+          onPress={() => setModalVisible(true)}
+        >
+          <View style={styles.displayContent}>
+            <View style={styles.iconContainer}>
+              <Feather name="calendar" size={28} color={colors.secondary} />
             </View>
+            <View style={styles.displayText}>
+              <Text style={styles.dateValue}>{formatDate(selectedDate)}</Text>
+              {pregnancyWeek > 0 && (
+                <Text style={styles.weekInfo}>Week {pregnancyWeek}</Text>
+              )}
+            </View>
+            <Feather
+              name="chevron-right"
+              size={24}
+              color={colors.textSecondary}
+            />
+          </View>
+        </Pressable>
 
-            {/* Name Input */}
-            <View style={styles.section}>
-              <Text style={styles.sectionLabel}>Full Name</Text>
-              <View style={styles.inputContainer}>
-                <Feather
-                  name="user"
-                  size={20}
-                  color={colors.textSecondary}
-                  style={styles.inputIcon}
-                />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter your full name"
-                  placeholderTextColor={colors.textSecondary}
-                  value={displayName}
-                  onChangeText={handleNameChange}
-                  editable={!isLoading}
+        {/* Edit Modal */}
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={modalVisible}
+          onRequestClose={() => setModalVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              {/* Header */}
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Edit Profile</Text>
+                <Pressable onPress={() => setModalVisible(false)}>
+                  <Feather name="x" size={24} color={colors.textPrimary} />
+                </Pressable>
+              </View>
+
+              {/* Name Input */}
+              <View style={styles.section}>
+                <Text style={styles.sectionLabel}>Full Name</Text>
+                <View style={styles.inputContainer}>
+                  <Feather
+                    name="user"
+                    size={20}
+                    color={colors.textSecondary}
+                    style={styles.inputIcon}
+                  />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter your full name"
+                    placeholderTextColor={colors.textSecondary}
+                    value={displayName}
+                    onChangeText={handleNameChange}
+                    editable={!isLoading}
+                  />
+                </View>
+              </View>
+
+              {/* Date Picker */}
+              <View style={styles.section}>
+                <Text style={styles.sectionLabel}>Pregnancy Start Date</Text>
+                <Calendar
+                  current={selectedDate}
+                  onDayPress={(day) => handleDateSelect(day.dateString)}
+                  markedDates={{
+                    [selectedDate]: {
+                      selected: true,
+                      selectedColor: colors.secondary,
+                      selectedTextColor: colors.surface,
+                    },
+                  }}
+                  theme={
+                    {
+                      backgroundColor: "transparent",
+                      calendarBackground: colors.surface,
+                      textSectionTitleColor: colors.textPrimary,
+                      selectedDayBackgroundColor: colors.secondary,
+                      selectedDayTextColor: colors.surface,
+                      todayTextColor: colors.secondary,
+                      dayTextColor: colors.textPrimary,
+                      textDisabledColor: colors.textSecondary,
+                      arrowColor: colors.secondary,
+                      monthTextColor: colors.textPrimary,
+                      textDayFontSize: 12,
+                      textMonthFontSize: 14,
+                      textDayHeaderFontSize: 10,
+                    } as any
+                  }
+                  maxDate={new Date().toISOString().split("T")[0]}
                 />
               </View>
-            </View>
 
-            {/* Date Picker */}
-            <View style={styles.section}>
-              <Text style={styles.sectionLabel}>Pregnancy Start Date</Text>
-              <Calendar
-                current={selectedDate}
-                onDayPress={(day) => handleDateSelect(day.dateString)}
-                markedDates={{
-                  [selectedDate]: {
-                    selected: true,
-                    selectedColor: colors.primary,
-                    selectedTextColor: colors.surface,
-                  },
-                }}
-                theme={
-                  {
-                    backgroundColor: "transparent",
-                    calendarBackground: colors.surface,
-                    textSectionTitleColor: colors.textPrimary,
-                    selectedDayBackgroundColor: colors.primary,
-                    selectedDayTextColor: colors.surface,
-                    todayTextColor: colors.primary,
-                    dayTextColor: colors.textPrimary,
-                    textDisabledColor: colors.textSecondary,
-                    arrowColor: colors.primary,
-                    monthTextColor: colors.textPrimary,
-                    textDayFontSize: 12,
-                    textMonthFontSize: 14,
-                    textDayHeaderFontSize: 10,
-                  } as any
-                }
-                maxDate={new Date().toISOString().split("T")[0]}
-              />
-            </View>
+              {/* Info Text */}
+              {pregnancyWeek > 0 && (
+                <View style={styles.infoBox}>
+                  <Feather name="info" size={18} color={colors.secondary} />
+                  <Text style={styles.infoText}>
+                    You are currently at week {pregnancyWeek} of your pregnancy
+                  </Text>
+                </View>
+              )}
 
-            {/* Info Text */}
-            {pregnancyWeek > 0 && (
-              <View style={styles.infoBox}>
-                <Feather name="info" size={18} color={colors.primary} />
-                <Text style={styles.infoText}>
-                  You are currently at week {pregnancyWeek} of your pregnancy
-                </Text>
+              {/* Buttons */}
+              <View style={styles.buttonContainer}>
+                <Pressable
+                  style={[styles.button, styles.cancelButton]}
+                  onPress={() => setModalVisible(false)}
+                >
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </Pressable>
+                <Pressable
+                  style={[
+                    styles.button,
+                    styles.saveButton,
+                    isLoading && styles.saveButtonDisabled,
+                  ]}
+                  onPress={handleSave}
+                  disabled={isLoading || !hasChanges}
+                >
+                  <Text style={styles.saveButtonText}>
+                    {isLoading ? "Saving..." : "Save Changes"}
+                  </Text>
+                </Pressable>
               </View>
-            )}
-
-            {/* Buttons */}
-            <View style={styles.buttonContainer}>
-              <Pressable
-                style={[styles.button, styles.cancelButton]}
-                onPress={() => setModalVisible(false)}
-              >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </Pressable>
-              <Pressable
-                style={[
-                  styles.button,
-                  styles.saveButton,
-                  isLoading && styles.saveButtonDisabled,
-                ]}
-                onPress={handleSave}
-                disabled={isLoading || !hasChanges}
-              >
-                <Text style={styles.saveButtonText}>
-                  {isLoading ? "Saving..." : "Save Changes"}
-                </Text>
-              </Pressable>
             </View>
           </View>
-        </View>
-      </Modal>
-    </View>
-  );
-};
+        </Modal>
+      </View>
+    );
+  };
 
 const styles = StyleSheet.create({
   displayCard: {
@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   weekInfo: {
-    color: colors.primary,
+    color: colors.success,
     fontSize: typography.label,
     marginTop: spacing.xs,
     fontWeight: "500",

@@ -64,7 +64,7 @@ Deno.serve(async (req: Request) => {
 
         // Parse request body
         const body: EphemeralTokenRequest = await req.json();
-        const model = body.model || "gpt-4o-realtime-preview-2024-12-17";
+        const model = body.model || "gpt-realtime-mini";
         const voice = body.voice || "alloy";
         const language = body.language || "en";
 

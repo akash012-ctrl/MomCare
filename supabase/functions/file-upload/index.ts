@@ -88,7 +88,7 @@ async function analyzeImage(
             Authorization: `Bearer ${openaiApiKey}`,
         },
         body: JSON.stringify({
-            model: "gpt-4o",
+            model: "gpt-4o-mini",
             messages: [
                 {
                     role: "user",
@@ -157,7 +157,7 @@ async function storeAnalysisResult(
             analysis_type: analysisType,
             result,
             confidence,
-            model_used: "gpt-4o",
+            model_used: "gpt-4o-mini",
             tokens_used: tokensUsed,
             processing_time_ms: 0,
         })
@@ -308,7 +308,7 @@ Deno.serve(async (req) => {
                     imageUrl,
                     storagePath,
                     tokensUsed,
-                    modelUsed: "gpt-4o",
+                    modelUsed: "gpt-4o-mini",
                     mealTypeOverride: mealType,
                 });
 

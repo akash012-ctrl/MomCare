@@ -289,7 +289,14 @@ export function getWeeklyTips(week: number): string[] {
  * Format pregnancy progress as readable string
  */
 export function formatPregnancyProgress(info: PregnancyInfo): string {
-    return `${info.weeks} weeks and ${info.days} days`;
+    return `Week ${info.weeks}`;
+}
+
+/**
+ * Format pregnancy progress with days for calendar view
+ */
+export function formatPregnancyProgressWithDays(info: PregnancyInfo): string {
+    return `Week ${info.weeks}, Day ${info.days}`;
 }
 
 /**

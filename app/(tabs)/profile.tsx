@@ -295,7 +295,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   activeTab: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.secondary,
   },
   tabText: {
     color: colors.textSecondary,
