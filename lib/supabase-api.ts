@@ -136,7 +136,7 @@ export interface FileUploadRequest {
     userId: string;
     fileName: string;
     fileBase64: string;
-    analysisType: 'meal' | 'posture' | 'general' | 'ultrasound';
+    analysisType: 'meal' | 'general' | 'ultrasound';
     bucket?: string;
 }
 
@@ -564,7 +564,7 @@ interface UploadAndAnalyzeImageParams {
     fileName: string;
     fileBase64: string;
     mimeType: string;
-    analysisType: 'meal' | 'posture' | 'general' | 'ultrasound';
+    analysisType: 'meal' | 'general' | 'ultrasound';
     mealType?: string;
     bucket?: string;
 }

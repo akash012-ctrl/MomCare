@@ -1,7 +1,6 @@
 import {
   ImageAnalysisResult,
   MealAnalysisResult,
-  PostureAnalysisResult,
 } from "@/lib/image-analysis-types";
 import { uploadAndAnalyzeImage } from "@/lib/supabase-api";
 import { useCallback, useState } from "react";
@@ -20,7 +19,7 @@ interface UseImageAnalysisReturn extends UseImageAnalysisState {
   analyzeImage: (
     base64: string,
     mimeType: string,
-    analysisType: "meal" | "posture" | "general" | "ultrasound",
+    analysisType: "meal" | "general" | "ultrasound",
     width: number,
     height: number
   ) => Promise<void>;
@@ -53,7 +52,7 @@ export function useImageAnalysis(): UseImageAnalysisReturn {
     async (
       base64: string,
       mimeType: string,
-      analysisType: "meal" | "posture" | "general" | "ultrasound",
+      analysisType: "meal" | "general" | "ultrasound",
       width: number,
       height: number
     ) => {
@@ -148,11 +147,3 @@ export function useMealAnalysisResult(
   return result.result as MealAnalysisResult;
 }
 
-export function usePostureAnalysisResult(
-  result: ImageAnalysisResult | null
-): PostureAnalysisResult | null {
-  if (!result || result.analysis_type !== "posture") {
-    return null;
-  }
-  return result.result as PostureAnalysisResult;
-}

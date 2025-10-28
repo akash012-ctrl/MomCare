@@ -6,7 +6,7 @@
 /**
  * Analysis types for different image analysis use cases
  */
-export type AnalysisType = 'meal' | 'posture' | 'general' | 'ultrasound';
+export type AnalysisType = 'meal' | 'general' | 'ultrasound';
 
 /**
  * Background job status types
@@ -77,17 +77,6 @@ export interface MealItem {
         carbs: number;
         fat: number;
     };
-}
-
-/**
- * Posture analysis specific data
- */
-export interface PostureAnalysisResult extends ImageAnalysisData {
-    posture_score: number; // 0-100
-    areas_of_concern: string[];
-    recommendations: string[];
-    safe_to_perform: boolean;
-    description: string;
 }
 
 /**

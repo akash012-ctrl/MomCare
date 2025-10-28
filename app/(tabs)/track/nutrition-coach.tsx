@@ -5,12 +5,12 @@ import { useCallback, useEffect, useState } from "react";
 import {
   Pressable,
   RefreshControl,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useAppAlert } from "@/components/ui/app-alert";
 import { ProgressPill } from "@/components/ui/progress-pill";
@@ -175,7 +175,7 @@ export default function NutritionCoach() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <ScrollView
         contentInsetAdjustmentBehavior="always"
         refreshControl={
@@ -230,14 +230,14 @@ export default function NutritionCoach() {
                 nutrient.key === "calories_extra"
                   ? todayIntake.calories
                   : nutrient.key === "protein_g"
-                  ? todayIntake.protein_g
-                  : nutrient.key === "iron_mg"
-                  ? todayIntake.iron_mg
-                  : nutrient.key === "calcium_mg"
-                  ? todayIntake.calcium_mg
-                  : nutrient.key === "folic_acid_mcg"
-                  ? todayIntake.folic_acid_mcg
-                  : todayIntake.water_ml;
+                    ? todayIntake.protein_g
+                    : nutrient.key === "iron_mg"
+                      ? todayIntake.iron_mg
+                      : nutrient.key === "calcium_mg"
+                        ? todayIntake.calcium_mg
+                        : nutrient.key === "folic_acid_mcg"
+                          ? todayIntake.folic_acid_mcg
+                          : todayIntake.water_ml;
 
               return (
                 <MotiView

@@ -16,7 +16,7 @@ interface UploadRequest {
     userId: string;
     fileName: string;
     fileBase64: string;
-    analysisType: "meal" | "posture" | "general" | "ultrasound";
+    analysisType: "meal" | "general" | "ultrasound";
     bucket?: string;
     mimeType?: string;
     mealType?: string;
@@ -76,7 +76,7 @@ async function analyzeImage(
 
     const prompts: Record<string, string> = {
         meal: `Analyze this meal image and provide in JSON:\n{\n  "foods": [{"name": string, "confidence": 0-1}],\n  "calories": number,\n  "macros": {"protein": number, "carbs": number, "fat": number},\n  "micros": {"iron": number, "calcium": number, "folate": number},\n  "summary": string\n}`,
-        posture: `Analyze posture and provide in JSON:\n{\n  "score": 0-100,\n  "issues": [{"area": string, "severity": "low|medium|high", "recommendation": string}],\n  "assessment": string,\n  "exercises": [string]\n}`,
+
         general: `Analyze and provide in JSON:\n{\n  "description": string,\n  "objects": [string],\n  "suggestions": [string]\n}`,
         ultrasound: `Analyze ultrasound and provide in JSON:\n{\n  "week": number|null,\n  "weight": number|null,\n  "movement": boolean,\n  "anomalies": [string],\n  "recommendations": [string]\n}`,
     };

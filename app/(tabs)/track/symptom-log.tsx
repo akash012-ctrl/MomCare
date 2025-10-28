@@ -9,12 +9,12 @@ import {
   Platform,
   Pressable,
   RefreshControl,
-  SafeAreaView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useAppAlert } from "@/components/ui/app-alert";
 import { MotherhoodTheme } from "@/constants/theme";
@@ -198,7 +198,7 @@ export default function SymptomLog() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <KeyboardAvoidingView
         behavior={Platform.select({ ios: "padding", android: "height" })}
         style={{ flex: 1 }}

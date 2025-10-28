@@ -13,12 +13,13 @@ import {
   Platform,
   Pressable,
   RefreshControl,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 } from "react-native";
 
 const { colors, radii, spacing, typography } = MotherhoodTheme;
@@ -171,7 +172,7 @@ export default function KickCounter() {
   }, [user?.id, selectedPeriod, currentCount, notes, showAlert]);
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
@@ -239,7 +240,7 @@ export default function KickCounter() {
                     style={[
                       styles.periodLabel,
                       selectedPeriod === period.value &&
-                        styles.periodLabelActive,
+                      styles.periodLabelActive,
                     ]}
                   >
                     {period.label}

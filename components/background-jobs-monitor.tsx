@@ -103,11 +103,9 @@ export function BackgroundJobsMonitor({
     const labels: Record<string, string> = {
       "image-analysis": "🖼️ Image Analysis",
       "nutrition-report": "🥗 Nutrition Report",
-      "posture-check": "🧍 Posture Check",
       reminders: "🔔 Reminder",
       summaries: "📊 Summary",
       "save-meal-analysis": "🍽️ Save Meal",
-      "save-posture-analysis": "🧍 Save Posture",
       default: jobType,
     };
     return labels[jobType] || labels.default;

@@ -1,15 +1,14 @@
 import { useFocusEffect, useRouter } from "expo-router";
 import { MotiView } from "moti";
 import React, { useCallback, useState } from "react";
-import { SafeAreaView, ScrollView, StyleSheet } from "react-native";
+import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { LanguageSelector } from "@/components/language-selector";
-import {
-  AnalysisHistorySection,
-  type AnalysisTab,
-} from "@/components/profile/analysis-history-section";
+import { AnalysisHistorySection } from "@/components/profile/analysis-history-section";
+import { DueDateCard } from "@/components/profile/due-date-card";
 import { ProfileHeader } from "@/components/profile/profile-header";
 import { SettingsSection } from "@/components/profile/settings-section";
+import { PregnancyCalendar } from "@/components/ui/pregnancy-calendar";
 import { PregnancyStartDatePicker } from "@/components/ui/pregnancy-start-date-picker";
 import { MotherhoodTheme } from "@/constants/theme";
 import { useAuth } from "@/hooks/use-auth";
@@ -23,15 +22,14 @@ export default function ProfileScreen() {
   const router = useRouter();
   const { user, signOut, preferredLanguage, updateLanguagePreference } =
     useAuth();
-  const [activeTab, setActiveTab] = useState<AnalysisTab>("meals");
   const [mealHistory, setMealHistory] = useState<ImageAnalysisResult[]>([]);
-  const [postureHistory, setPostureHistory] = useState<ImageAnalysisResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pregnancyStartDate, setPregnancyStartDate] = useState<string | null>(null);
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const [isUpdatingLanguage, setIsUpdatingLanguage] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [activeTab, setActiveTab] = useState<'settings' | 'calendar'>('settings');
 
   const handleSignOut = async () => {
     try {
@@ -158,17 +156,6 @@ export default function ProfileScreen() {
 
       if (mealError) throw mealError;
       setMealHistory((mealData || []) as ImageAnalysisResult[]);
-
-      const { data: postureData, error: postureError } = await supabase
-        .from("image_analysis_results")
-        .select("*")
-        .eq("user_id", userId)
-        .eq("analysis_type", "posture")
-        .order("created_at", { ascending: false })
-        .limit(10);
-
-      if (postureError) throw postureError;
-      setPostureHistory((postureData || []) as ImageAnalysisResult[]);
     } catch (err) {
       console.error("Error fetching history:", err);
       setError(err instanceof Error ? err.message : "Failed to load history");
@@ -198,35 +185,86 @@ export default function ProfileScreen() {
           />
         </MotiView>
 
-        {pregnancyStartDate ? (
-          <PregnancyStartDatePicker
-            initialDate={pregnancyStartDate}
-            initialName={user?.name || ""}
-            onDateChange={handleUpdatePregnancyDate}
-            onNameChange={handleUpdateName}
-            isLoading={isUpdatingProfile}
-          />
-        ) : null}
+        {/* Tab Switcher */}
+        <View style={styles.tabContainer}>
+          <Pressable
+            style={[styles.tab, activeTab === 'settings' && styles.activeTab]}
+            onPress={() => setActiveTab('settings')}
+          >
+            <Text style={[styles.tabText, activeTab === 'settings' && styles.activeTabText]}>
+              Settings
+            </Text>
+          </Pressable>
+          <Pressable
+            style={[styles.tab, activeTab === 'calendar' && styles.activeTab]}
+            onPress={() => setActiveTab('calendar')}
+          >
+            <Text style={[styles.tabText, activeTab === 'calendar' && styles.activeTabText]}>
+              Calendar
+            </Text>
+          </Pressable>
+        </View>
 
-        <LanguageSelector
-          selectedLanguage={preferredLanguage}
-          onLanguageChange={handleLanguageChange}
-          isLoading={isUpdatingLanguage}
-        />
+        {/* Settings Tab Content */}
+        {activeTab === 'settings' && (
+          <>
+            {pregnancyStartDate ? (
+              <PregnancyStartDatePicker
+                initialDate={pregnancyStartDate}
+                initialName={user?.name || ""}
+                onDateChange={handleUpdatePregnancyDate}
+                onNameChange={handleUpdateName}
+                isLoading={isUpdatingProfile}
+              />
+            ) : null}
 
-        <AnalysisHistorySection
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          mealHistory={mealHistory}
-          postureHistory={postureHistory}
-          loading={loading}
-          error={error}
-        />
+            <LanguageSelector
+              selectedLanguage={preferredLanguage}
+              onLanguageChange={handleLanguageChange}
+              isLoading={isUpdatingLanguage}
+            />
 
-        <SettingsSection
-          onSignOut={handleSignOut}
-          isSigningOut={isSigningOut}
-        />
+            <AnalysisHistorySection
+              mealHistory={mealHistory}
+              loading={loading}
+              error={error}
+            />
+
+            <SettingsSection
+              onSignOut={handleSignOut}
+              isSigningOut={isSigningOut}
+            />
+          </>
+        )}
+
+        {/* Calendar Tab Content */}
+        {activeTab === 'calendar' && (
+          <View style={{ gap: spacing.xxxl }}>
+            {pregnancyStartDate && (
+              <MotiView
+                from={{ opacity: 0, translateY: 20 }}
+                animate={{ opacity: 1, translateY: 0 }}
+                transition={{ type: "timing", duration: 500 }}
+              >
+                <DueDateCard
+                  pregnancyStartDate={pregnancyStartDate}
+                  language={preferredLanguage || 'en'}
+                />
+              </MotiView>
+            )}
+
+            <MotiView
+              from={{ opacity: 0, translateY: 20 }}
+              animate={{ opacity: 1, translateY: 0 }}
+              transition={{ type: "timing", duration: 500, delay: 100 }}
+            >
+              <PregnancyCalendar
+                pregnancyStartDate={pregnancyStartDate || undefined}
+                onDateSelect={(date) => console.log("Selected date:", date)}
+              />
+            </MotiView>
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -242,5 +280,29 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.lg,
     paddingTop: spacing.xxxl,
     gap: spacing.xxxl,
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: colors.surface,
+    borderRadius: spacing.md,
+    padding: spacing.xs,
+    gap: spacing.xs,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: spacing.md,
+    borderRadius: spacing.sm,
+    alignItems: 'center',
+  },
+  activeTab: {
+    backgroundColor: colors.primary,
+  },
+  tabText: {
+    color: colors.textSecondary,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  activeTabText: {
+    color: '#FFFFFF',
   },
 });
