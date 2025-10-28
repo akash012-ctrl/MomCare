@@ -1,4 +1,5 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
+import * as Haptics from "expo-haptics";
 import { MotiView } from "moti";
 import React, { useMemo } from "react";
 import {
@@ -81,7 +82,10 @@ export function ChatInput({
         <View style={styles.inputContainer}>
             <View style={styles.inputWrapper}>
                 <Pressable
-                    onPress={onPickAttachment}
+                    onPress={async () => {
+                        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        onPickAttachment();
+                    }}
                     disabled={isSubmitting || isAttachmentUploading}
                     style={attachmentButtonStyles}
                     accessibilityLabel="Attach file"
@@ -111,7 +115,10 @@ export function ChatInput({
                 transition={{ type: "timing", duration: 100 }}
             >
                 <Pressable
-                    onPress={onSend}
+                    onPress={async () => {
+                        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                        onSend();
+                    }}
                     disabled={sendDisabled}
                     style={sendButtonStyles}
                     accessibilityLabel="Send message"

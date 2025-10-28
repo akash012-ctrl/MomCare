@@ -1,5 +1,6 @@
 import { MotherhoodTheme } from "@/constants/theme";
 import { Feather } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import React, { useEffect, useState } from "react";
 import {
   Modal,
@@ -40,6 +41,8 @@ export const PregnancyStartDatePicker: React.FC<
     }, [initialDate]);
 
     const handleDateSelect = (date: string) => {
+      // Trigger haptic feedback on date selection
+      Haptics.selectionAsync();
       setSelectedDate(date);
       setHasChanges(true);
     };
@@ -49,7 +52,10 @@ export const PregnancyStartDatePicker: React.FC<
       setHasChanges(true);
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
+      // Trigger haptic feedback on save
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
       if (selectedDate) {
         onDateChange(selectedDate);
       }

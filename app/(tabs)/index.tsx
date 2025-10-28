@@ -1,4 +1,5 @@
 import { Feather } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { MotiView } from "moti";
@@ -319,7 +320,10 @@ export default function HomeDashboard() {
             >
               <Pressable
                 style={styles.compactFeatureCard}
-                onPress={() => router.push(card.route as never)}
+                onPress={async () => {
+                  await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  router.push(card.route as never);
+                }}
               >
                 {({ pressed }) => (
                   <MotiView

@@ -4,6 +4,7 @@ import { useImageAnalysis } from "@/hooks/use-image-analysis";
 import { useThemeColor } from "@/hooks/use-theme-color";
 import { MealAnalysisResult } from "@/lib/image-analysis-types";
 import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useState } from "react";
 import {
@@ -257,7 +258,10 @@ export default function MealLoggingScreen(): React.ReactElement {
           {success && mealData && (
             <TouchableOpacity
               style={[styles.saveButton, submitting && styles.saveButtonDisabled]}
-              onPress={handleSaveMeal}
+              onPress={async () => {
+                await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                handleSaveMeal();
+              }}
               disabled={submitting}
             >
               {submitting ? (

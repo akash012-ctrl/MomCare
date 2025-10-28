@@ -1,4 +1,5 @@
 import { Feather } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import React, { useMemo } from "react";
 import { StyleSheet, TextInput, TouchableOpacity, View } from "react-native";
 
@@ -28,7 +29,10 @@ export function ExploreSearchBar({ value, placeholder, onChangeText, onClear }: 
             />
             {hasValue ? (
                 <TouchableOpacity
-                    onPress={() => onClear?.()}
+                    onPress={async () => {
+                        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        onClear?.();
+                    }}
                     accessibilityRole="button"
                     accessibilityLabel="Clear search"
                 >

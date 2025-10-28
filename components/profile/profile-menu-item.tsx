@@ -1,4 +1,5 @@
 import { Feather } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
@@ -15,7 +16,10 @@ interface ProfileMenuItemProps {
 
 export function ProfileMenuItem({ icon, label, onPress, isDestructive }: ProfileMenuItemProps) {
     return (
-        <Pressable onPress={onPress} style={({ pressed }) => [styles.item, pressed && styles.itemPressed]}>
+        <Pressable onPress={async () => {
+            await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            onPress();
+        }} style={({ pressed }) => [styles.item, pressed && styles.itemPressed]}>
             <View style={styles.itemLeft}>
                 <Feather name={icon} size={20} color={isDestructive ? "#EF5350" : colors.secondary} />
                 <Text style={[styles.itemLabel, isDestructive && styles.destructiveLabel]}>{label}</Text>

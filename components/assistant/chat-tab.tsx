@@ -2,6 +2,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import * as DocumentPicker from "expo-document-picker";
 import { File } from "expo-file-system";
 import * as FileSystem from "expo-file-system/legacy";
+import * as Haptics from "expo-haptics";
 import { MotiView } from "moti";
 import React, {
     useCallback,
@@ -577,7 +578,10 @@ function ChatErrorBanner({
         <View style={styles.feedbackBanner}>
             <Ionicons name="warning" size={16} color={colors.primary} />
             <Text style={styles.feedbackText}>{error}</Text>
-            <Pressable onPress={onDismiss} accessibilityLabel="Dismiss error">
+            <Pressable onPress={async () => {
+                await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                onDismiss();
+            }} accessibilityLabel="Dismiss error">
                 <Ionicons name="close" size={18} color={colors.primary} />
             </Pressable>
         </View>
@@ -604,7 +608,10 @@ function ChatLoadingFooter({
         >
             <ActivityIndicator color={colors.primary} size="small" />
             <Text style={styles.loadingLabel}>MomCare is thinking...</Text>
-            <Pressable onPress={onStop} style={styles.stopButton}>
+            <Pressable onPress={async () => {
+                await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                onStop();
+            }} style={styles.stopButton}>
                 <Ionicons name="square" size={14} color={colors.primary} />
                 <Text style={styles.stopButtonText}>Stop</Text>
             </Pressable>

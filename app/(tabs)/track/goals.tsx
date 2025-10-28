@@ -1,4 +1,5 @@
 import { Feather } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import { MotiView } from "moti";
 import { useCallback, useEffect, useState } from "react";
@@ -293,7 +294,8 @@ export default function Goals() {
             />
             <Pressable
               style={styles.deleteButton}
-              onPress={() => {
+              onPress={async () => {
+                await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
                 showAlert({
                   title: "Delete Goal",
                   message: "Are you sure you want to remove this goal?",
@@ -326,11 +328,17 @@ export default function Goals() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <Pressable onPress={() => router.back()}>
+          <Pressable onPress={async () => {
+            await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.back();
+          }}>
             <Feather name="arrow-left" size={24} color={colors.textPrimary} />
           </Pressable>
           <Text style={styles.headerTitle}>My Goals</Text>
-          <Pressable onPress={() => setModalVisible(true)}>
+          <Pressable onPress={async () => {
+            await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            setModalVisible(true);
+          }}>
             <Feather name="plus" size={24} color={colors.primary} />
           </Pressable>
         </View>
@@ -402,7 +410,10 @@ export default function Goals() {
                                 category === cat.name ? cat.color : colors.surface,
                             },
                           ]}
-                          onPress={() => setCategory(cat.name)}
+                          onPress={async () => {
+                            await Haptics.selectionAsync();
+                            setCategory(cat.name);
+                          }}
                         >
                           <Text style={styles.categoryIcon}>{cat.icon}</Text>
                           <Text

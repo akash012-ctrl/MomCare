@@ -1,3 +1,4 @@
+import * as Haptics from "expo-haptics";
 import { useFocusEffect, useRouter } from "expo-router";
 import { MotiView } from "moti";
 import React, { useCallback, useState } from "react";
@@ -190,7 +191,10 @@ export default function ProfileScreen() {
         <View style={styles.tabContainer}>
           <Pressable
             style={[styles.tab, activeTab === 'settings' && styles.activeTab]}
-            onPress={() => setActiveTab('settings')}
+            onPress={async () => {
+              await Haptics.selectionAsync();
+              setActiveTab('settings');
+            }}
           >
             <Text style={[styles.tabText, activeTab === 'settings' && styles.activeTabText]}>
               Settings
@@ -198,7 +202,10 @@ export default function ProfileScreen() {
           </Pressable>
           <Pressable
             style={[styles.tab, activeTab === 'calendar' && styles.activeTab]}
-            onPress={() => setActiveTab('calendar')}
+            onPress={async () => {
+              await Haptics.selectionAsync();
+              setActiveTab('calendar');
+            }}
           >
             <Text style={[styles.tabText, activeTab === 'calendar' && styles.activeTabText]}>
               Calendar

@@ -1,4 +1,5 @@
 import { MotherhoodTheme } from "@/constants/theme";
+import * as Haptics from "expo-haptics";
 import React, { useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { Calendar } from "react-native-calendars";
@@ -123,6 +124,8 @@ export const PregnancyCalendar: React.FC<PregnancyCalendarProps> = ({
       <Calendar
         current={selectedDate}
         onDayPress={(day) => {
+          // Trigger haptic feedback on date selection
+          Haptics.selectionAsync();
           onDateSelect?.(day.dateString);
         }}
         markedDates={allMarked}

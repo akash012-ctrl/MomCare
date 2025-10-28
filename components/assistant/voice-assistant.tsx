@@ -1,4 +1,5 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
+import * as Haptics from "expo-haptics";
 import { MotiView } from "moti";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -760,6 +761,9 @@ function useVoiceConnectionControls(options: VoiceConnectionOptions): VoiceConne
         }
 
         try {
+            // Trigger haptic feedback on voice toggle
+            await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
             if (connected) {
                 await voice.disconnect();
             } else {

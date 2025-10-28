@@ -1,4 +1,5 @@
 import { Feather } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import { MotiView } from "moti";
 import { useCallback, useEffect, useState } from "react";
@@ -206,7 +207,10 @@ export default function SymptomLog() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <Pressable onPress={() => router.back()}>
+          <Pressable onPress={async () => {
+            await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.back();
+          }}>
             <Feather name="arrow-left" size={24} color={colors.textPrimary} />
           </Pressable>
           <Text style={styles.headerTitle}>Symptom Log</Text>
@@ -268,7 +272,10 @@ export default function SymptomLog() {
             <View style={styles.modalContent}>
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>Log {selectedSymptom}</Text>
-                <Pressable onPress={() => setModalVisible(false)}>
+                <Pressable onPress={async () => {
+                  await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setModalVisible(false);
+                }}>
                   <Feather name="x" size={24} color={colors.textPrimary} />
                 </Pressable>
               </View>
@@ -289,7 +296,10 @@ export default function SymptomLog() {
                               : colors.surface,
                         },
                       ]}
-                      onPress={() => setSelectedSeverity(level.value)}
+                      onPress={async () => {
+                        await Haptics.selectionAsync();
+                        setSelectedSeverity(level.value);
+                      }}
                     >
                       <Text
                         style={[
@@ -327,7 +337,10 @@ export default function SymptomLog() {
               </View>
 
               {/* Save Button */}
-              <Pressable style={styles.saveButton} onPress={handleSaveSymptom}>
+              <Pressable style={styles.saveButton} onPress={async () => {
+                await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                handleSaveSymptom();
+              }}>
                 <Text style={styles.saveButtonText}>Log Symptom</Text>
               </Pressable>
             </View>

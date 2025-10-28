@@ -1,4 +1,5 @@
 import { Feather } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import React, {
   createContext,
   useCallback,
@@ -72,6 +73,18 @@ export function showAppAlert(options: ShowAlertOptions) {
       })
     ),
   };
+
+  // Trigger haptic feedback based on alert type
+  const alertType = alertState.type;
+  if (alertType === "success") {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  } else if (alertType === "error") {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+  } else if (alertType === "warning") {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+  } else {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  }
 
   notify(alertState);
 }

@@ -1,4 +1,5 @@
 import { Feather } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import React from "react";
 import { StyleSheet, TouchableOpacity } from "react-native";
 
@@ -23,7 +24,10 @@ export function TabButton({ tab, isActive, onPress }: TabButtonProps) {
     return (
         <TouchableOpacity
             style={[styles.tabButton, isActive && styles.tabButtonActive]}
-            onPress={onPress}
+            onPress={async () => {
+                await Haptics.selectionAsync();
+                onPress();
+            }}
         >
             <Feather
                 size={25}

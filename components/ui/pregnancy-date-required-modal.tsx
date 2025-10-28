@@ -1,4 +1,5 @@
 import { Feather } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import React, { useState } from "react";
 import {
     ActivityIndicator,
@@ -32,6 +33,11 @@ export function PregnancyDateRequiredModal({
         setIsSubmitting(true);
         try {
             await onDateSelected(selectedDate);
+            // Success haptic feedback
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        } catch (error) {
+            // Error haptic feedback
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
         } finally {
             setIsSubmitting(false);
         }
@@ -93,7 +99,10 @@ export function PregnancyDateRequiredModal({
                     <View style={styles.calendarContainer}>
                         <Calendar
                             current={selectedDate || new Date().toISOString().split("T")[0]}
-                            onDayPress={(day) => setSelectedDate(day.dateString)}
+                            onDayPress={(day) => {
+                                Haptics.selectionAsync();
+                                setSelectedDate(day.dateString);
+                            }}
                             markedDates={{
                                 [selectedDate]: {
                                     selected: true,

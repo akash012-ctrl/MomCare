@@ -25,7 +25,10 @@ export function SettingsSection({
                 <ProfileMenuItem icon="help-circle" label="Help & Support" onPress={() => { }} />
             </View>
             <Pressable
-                onPress={onSignOut}
+                onPress={() => {
+                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+                    onSignOut();
+                }}
                 disabled={isSigningOut}
                 style={({ pressed }) => [
                     styles.signOutButton,

@@ -1,4 +1,5 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
+import * as Haptics from "expo-haptics";
 import React, { useMemo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
@@ -36,7 +37,10 @@ export function LanguageSelector({
         {languages.map((lang) => (
           <Pressable
             key={lang.code}
-            onPress={() => onLanguageChange(lang.code as "en" | "hi")}
+            onPress={async () => {
+              await Haptics.selectionAsync();
+              onLanguageChange(lang.code as "en" | "hi");
+            }}
             disabled={isLoading}
             style={({ pressed }) => [
               styles.languageButton,

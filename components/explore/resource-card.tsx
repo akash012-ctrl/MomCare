@@ -1,4 +1,5 @@
 import { Feather } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import React from "react";
 import { StyleSheet, TouchableOpacity, View } from "react-native";
 
@@ -61,14 +62,20 @@ export function ResourceCard({ article, onShare, onSave, isSaved }: ResourceCard
             </View>
 
             <View style={styles.cardActions}>
-                <TouchableOpacity style={styles.actionButton} onPress={() => onShare(article)}>
+                <TouchableOpacity style={styles.actionButton} onPress={async () => {
+                    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    onShare(article);
+                }}>
                     <Feather size={16} name="share-2" color={colors.secondary} />
                     <ThemedText style={styles.actionText}>Share</ThemedText>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                     style={[styles.actionButton, isSaved && styles.actionButtonActive]}
-                    onPress={() => onSave(article)}
+                    onPress={async () => {
+                        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        onSave(article);
+                    }}
                 >
                     <Feather
                         size={16}

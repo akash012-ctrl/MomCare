@@ -1,5 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
+import * as Haptics from "expo-haptics";
 import { MotiView } from "moti";
 import { useEffect, useMemo, useState } from "react";
 import { Keyboard, Pressable, StyleSheet, Text, View } from "react-native";
@@ -124,6 +125,9 @@ export function MotherhoodTabBar({
             const isFocused = activeIndex === index;
 
             const handlePress = () => {
+              // Trigger haptic feedback on tab press
+              Haptics.selectionAsync();
+
               const event = navigation.emit({
                 type: "tabPress",
                 target: route.key,

@@ -1,4 +1,5 @@
 import { Feather } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { MotiView } from "moti";
@@ -101,7 +102,10 @@ interface AuthToggleProps {
 
 function AuthToggle({ mode, isLoading, onToggle }: AuthToggleProps) {
   return (
-    <TouchableOpacity onPress={onToggle} disabled={isLoading}>
+    <TouchableOpacity onPress={async () => {
+      await Haptics.selectionAsync();
+      onToggle();
+    }} disabled={isLoading}>
       <Text style={styles.toggleText}>
         {mode === "signin"
           ? "Don't have an account? "
@@ -191,6 +195,8 @@ export default function LoginScreen() {
 
       if (mode === "signup") {
         await signUp({ name, email, password });
+        // Trigger success haptic
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         // Show verification message
         setVerificationMessage(
           "Account created! Please check your email to verify your account before signing in."
@@ -200,6 +206,8 @@ export default function LoginScreen() {
         return;
       } else {
         await signIn({ email, password });
+        // Trigger success haptic
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         console.log("Sign in successful");
       }
 
@@ -208,6 +216,8 @@ export default function LoginScreen() {
         router.replace("/(tabs)" as any);
       }, 500);
     } catch (error) {
+      // Trigger error haptic
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       const errorMsg =
         error instanceof Error
           ? error.message

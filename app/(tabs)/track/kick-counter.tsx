@@ -4,7 +4,7 @@ import { StatCard } from "@/components/ui/stat-card";
 import { MotherhoodTheme } from "@/constants/theme";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/lib/supabase";
-import { Feather } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import { MotiView } from "moti";
 import { useCallback, useEffect, useState } from "react";
@@ -132,12 +132,16 @@ export default function KickCounter() {
 
   const incrementKicks = useCallback(async () => {
     if (!user?.id) return;
+    // Trigger haptic feedback on increment
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const newCount = currentCount + 1;
     setCurrentCount(newCount);
   }, [user?.id, currentCount]);
 
   const decrementKicks = useCallback(async () => {
     if (!user?.id || currentCount <= 0) return;
+    // Trigger haptic feedback on decrement
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const newCount = currentCount - 1;
     setCurrentCount(newCount);
   }, [user?.id, currentCount]);
@@ -184,8 +188,11 @@ export default function KickCounter() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.header}>
-            <Pressable onPress={() => router.back()}>
-              <Feather name="arrow-left" size={24} color={colors.textPrimary} />
+            <Pressable onPress={async () => {
+              await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.back();
+            }}>
+              <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
             </Pressable>
             <Text style={styles.headerTitle}>Kick Counter</Text>
             <View style={{ width: 24 }} />
@@ -225,7 +232,9 @@ export default function KickCounter() {
                           : colors.surface,
                     },
                   ]}
-                  onPress={() => {
+                  onPress={async () => {
+                    // Trigger haptic feedback on period selection
+                    await Haptics.selectionAsync();
                     setSelectedPeriod(period.value);
                     const existing = todayKicks.find(
                       (k) => k.time_of_day === period.value
@@ -293,7 +302,10 @@ export default function KickCounter() {
                 numberOfLines={3}
                 textAlignVertical="top"
               />
-              <Pressable style={styles.saveButton} onPress={saveNotes}>
+              <Pressable style={styles.saveButton} onPress={async () => {
+                await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                saveNotes();
+              }}>
                 <Text style={styles.saveButtonText}>Save</Text>
               </Pressable>
             </View>

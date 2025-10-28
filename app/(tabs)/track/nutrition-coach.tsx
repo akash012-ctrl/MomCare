@@ -186,8 +186,11 @@ export default function NutritionCoach() {
         {/* Header */}
         <View style={styles.headerWrapper}>
           <View style={styles.header}>
-            <Pressable onPress={() => router.back()}>
-              <Feather name="arrow-left" size={24} color={colors.textPrimary} />
+            <Pressable onPress={async () => {
+              await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.back();
+            }}>
+              <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
             </Pressable>
             <Text style={styles.headerTitle}>Nutrition Coach</Text>
             <Pressable

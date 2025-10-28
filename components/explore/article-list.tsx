@@ -1,3 +1,4 @@
+import * as Haptics from "expo-haptics";
 import React, { useCallback } from "react";
 import {
     ActivityIndicator,
@@ -43,7 +44,10 @@ export function ExploreArticleList({
                 />
                 <TouchableOpacity
                     style={styles.readMoreButton}
-                    onPress={() => onOpenLink(item.url)}
+                    onPress={async () => {
+                        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        onOpenLink(item.url);
+                    }}
                 >
                     <ThemedText style={styles.readMoreText}>Read Full Article →</ThemedText>
                 </TouchableOpacity>

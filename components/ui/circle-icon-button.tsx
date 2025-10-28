@@ -1,4 +1,5 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
+import * as Haptics from "expo-haptics";
 import React from "react";
 import { Pressable, StyleSheet, ViewStyle } from "react-native";
 
@@ -25,9 +26,15 @@ export function CircleIconButton({
   disabled = false,
   style,
 }: CircleIconButtonProps) {
+  const handlePress = async () => {
+    // Trigger haptic feedback on button press
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    onPress();
+  };
+
   return (
     <Pressable
-      onPress={onPress}
+      onPress={handlePress}
       disabled={disabled}
       style={({ pressed }) => [
         styles.button,

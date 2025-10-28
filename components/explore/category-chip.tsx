@@ -1,3 +1,4 @@
+import * as Haptics from "expo-haptics";
 import React from "react";
 import { StyleSheet, TouchableOpacity } from "react-native";
 
@@ -14,7 +15,10 @@ interface CategoryChipProps {
 
 export function CategoryChip({ category, isActive, onPress }: CategoryChipProps) {
     return (
-        <TouchableOpacity style={[styles.chip, isActive && styles.chipActive]} onPress={onPress}>
+        <TouchableOpacity style={[styles.chip, isActive && styles.chipActive]} onPress={async () => {
+            await Haptics.selectionAsync();
+            onPress();
+        }}>
             <ThemedText style={[styles.chipText, isActive && styles.chipTextActive]}>
                 {category}
             </ThemedText>

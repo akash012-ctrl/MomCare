@@ -103,9 +103,17 @@ function useSavedArticles(showAlert: ShowAlertFn): SavedArticlesResult {
   const toggleSavedArticle = useCallback(
     async (article: Article) => {
       try {
+        const isSaving = !savedArticles.includes(article.id);
         const updatedSaved = savedArticles.includes(article.id)
           ? savedArticles.filter((id) => id !== article.id)
           : [...savedArticles, article.id];
+
+        // Haptic feedback for save/unsave
+        if (isSaving) {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        } else {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        }
 
         setSavedArticles(updatedSaved);
         await AsyncStorage.setItem(BOOKMARKS_KEY, JSON.stringify(updatedSaved));
