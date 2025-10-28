@@ -26,11 +26,14 @@ export default function TabLayout() {
           .eq("id", user.id)
           .single();
 
-        if (error) {
+        if (error && error.code !== "PGRST116") {
           console.error("Error checking pregnancy date:", error);
+          setIsCheckingDate(false);
+          return;
         }
 
-        // Show modal if user is logged in but hasn't set pregnancy date
+        // Show modal if user doesn't have pregnancy_start_date set
+        // This blocks access until date is selected
         setShowDateModal(!data?.pregnancy_start_date);
       } catch (err) {
         console.error("Error in checkPregnancyDate:", err);
@@ -46,21 +49,48 @@ export default function TabLayout() {
     if (!user?.id) return;
 
     try {
-      const { error } = await supabase
+      // First check if profile exists
+      const { data: existingProfile, error: fetchError } = await supabase
         .from("user_profiles")
-        .update({ pregnancy_start_date: date })
-        .eq("id", user.id);
+        .select("id")
+        .eq("id", user.id)
+        .single();
 
-      if (error) {
-        throw error;
+      if (fetchError && fetchError.code !== "PGRST116") {
+        // PGRST116 means not found, which is expected for new users
+        throw fetchError;
+      }
+
+      if (existingProfile) {
+        // Profile exists, update it
+        const { error: updateError } = await supabase
+          .from("user_profiles")
+          .update({ pregnancy_start_date: date })
+          .eq("id", user.id);
+
+        if (updateError) throw updateError;
+      } else {
+        // Profile doesn't exist, create it
+        const { error: insertError } = await supabase
+          .from("user_profiles")
+          .insert({
+            id: user.id,
+            email: user.email,
+            full_name: user.name || null,
+            pregnancy_start_date: date,
+            preferences: {},
+          });
+
+        if (insertError) throw insertError;
       }
 
       setShowDateModal(false);
     } catch (err) {
       console.error("Error saving pregnancy date:", err);
+      alert("Failed to save pregnancy date. Please try again.");
       throw err;
     }
-  }, [user?.id]);
+  }, [user?.id, user?.email, user?.name]);
 
   // Don't render tabs until we've checked for pregnancy date
   if (isCheckingDate) {

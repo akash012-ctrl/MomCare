@@ -28,11 +28,24 @@ function AuthProviderComponent({ children }: { children: React.ReactNode }) {
 
         if (data.session?.user) {
           // Load full user profile from database
-          const { data: profile } = await supabase
+          const { data: profile, error: profileError } = await supabase
             .from("user_profiles")
             .select("*")
             .eq("id", data.session.user.id)
             .single();
+
+          // If profile doesn't exist, create it
+          if (profileError && profileError.code === "PGRST116") {
+            console.log("Profile not found during session restore, creating profile");
+            await supabase
+              .from("user_profiles")
+              .insert({
+                id: data.session.user.id,
+                email: data.session.user.email,
+                full_name: data.session.user.user_metadata?.name || null,
+                preferences: {},
+              });
+          }
 
           setUser({
             id: data.session.user.id,
@@ -60,11 +73,24 @@ function AuthProviderComponent({ children }: { children: React.ReactNode }) {
       async (event, session) => {
         if (session?.user) {
           // Load full user profile on auth state change
-          const { data: profile } = await supabase
+          const { data: profile, error: profileError } = await supabase
             .from("user_profiles")
             .select("*")
             .eq("id", session.user.id)
             .single();
+
+          // If profile doesn't exist, create it
+          if (profileError && profileError.code === "PGRST116") {
+            console.log("Profile not found during auth state change, creating profile");
+            await supabase
+              .from("user_profiles")
+              .insert({
+                id: session.user.id,
+                email: session.user.email,
+                full_name: session.user.user_metadata?.name || null,
+                preferences: {},
+              });
+          }
 
           setUser({
             id: session.user.id,
@@ -175,9 +201,23 @@ function AuthProviderComponent({ children }: { children: React.ReactNode }) {
           .eq("id", data.user.id)
           .single();
 
-        if (profileError) {
+        if (profileError && profileError.code === "PGRST116") {
+          // Profile doesn't exist, create it
+          console.log("Profile not found, creating new profile for user:", data.user.id);
+          const { error: insertError } = await supabase
+            .from("user_profiles")
+            .insert({
+              id: data.user.id,
+              email: data.user.email,
+              full_name: data.user.user_metadata?.name || null,
+              preferences: {},
+            });
+
+          if (insertError) {
+            console.error("Failed to create profile on sign in:", insertError);
+          }
+        } else if (profileError) {
           console.error("Profile fetch error:", profileError);
-          // Still set user even if profile fetch fails
         }
 
         setUser({
