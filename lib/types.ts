@@ -4,6 +4,7 @@ export interface User {
     name?: string;
     avatar_url?: string;
     created_at?: string;
+    email_verified?: boolean;
 }
 
 export interface AuthContextType {
@@ -17,6 +18,7 @@ export interface AuthContextType {
     resetPassword: (email: string) => Promise<string>;
     preferredLanguage: "en" | "hi";
     updateLanguagePreference: (language: "en" | "hi") => Promise<void>;
+    resendVerificationEmail: () => Promise<void>;
 }
 
 export interface SignUpParams {

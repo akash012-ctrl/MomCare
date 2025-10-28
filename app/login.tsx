@@ -127,6 +127,19 @@ function AuthErrorBanner({ message }: AuthErrorBannerProps) {
   );
 }
 
+interface AuthSuccessBannerProps {
+  message: string;
+}
+
+function AuthSuccessBanner({ message }: AuthSuccessBannerProps) {
+  return (
+    <View style={styles.successBanner}>
+      <Feather name="check-circle" size={18} color={colors.surface} />
+      <Text style={styles.successText}>{message}</Text>
+    </View>
+  );
+}
+
 export default function LoginScreen() {
   const router = useRouter();
   const { signIn, signUp, authError, clearError, isLoading } = useAuth();
@@ -135,6 +148,7 @@ export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [localError, setLocalError] = useState<string | null>(null);
+  const [verificationMessage, setVerificationMessage] = useState<string | null>(null);
 
   const title = useMemo(
     () => (mode === "signin" ? "Welcome Back" : "Create Account"),
@@ -147,6 +161,7 @@ export default function LoginScreen() {
 
   useEffect(() => {
     setLocalError(null);
+    setVerificationMessage(null);
     clearError();
   }, [mode, clearError]);
 
@@ -172,11 +187,17 @@ export default function LoginScreen() {
       }
 
       setLocalError(null);
+      setVerificationMessage(null);
 
       if (mode === "signup") {
         await signUp({ name, email, password });
-        // After signup, show success message or route to onboarding
+        // Show verification message
+        setVerificationMessage(
+          "Account created! Please check your email to verify your account before signing in."
+        );
         console.log("Sign up successful");
+        // Don't navigate yet - user needs to verify email first
+        return;
       } else {
         await signIn({ email, password });
         console.log("Sign in successful");
@@ -240,6 +261,7 @@ export default function LoginScreen() {
               </View>
 
               {errorToShow ? <AuthErrorBanner message={errorToShow} /> : null}
+              {verificationMessage ? <AuthSuccessBanner message={verificationMessage} /> : null}
 
               {mode === "signup" ? (
                 <AuthField
@@ -420,6 +442,19 @@ const styles = StyleSheet.create({
     backgroundColor: "#FF6B81",
   },
   errorText: {
+    color: colors.surface,
+    flex: 1,
+    fontSize: typography.label,
+  },
+  successBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    padding: spacing.md,
+    borderRadius: radii.md,
+    backgroundColor: colors.success,
+  },
+  successText: {
     color: colors.surface,
     flex: 1,
     fontSize: typography.label,

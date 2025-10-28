@@ -80,6 +80,7 @@ export const PregnancyStartDatePicker: React.FC<
     };
 
     const pregnancyWeek = calculateWeek(selectedDate);
+    const hasDate = selectedDate && selectedDate.length > 0;
 
     return (
       <View>
@@ -93,8 +94,13 @@ export const PregnancyStartDatePicker: React.FC<
               <Feather name="calendar" size={28} color={colors.secondary} />
             </View>
             <View style={styles.displayText}>
-              <Text style={styles.dateValue}>{formatDate(selectedDate)}</Text>
-              {pregnancyWeek > 0 && (
+              {!hasDate && (
+                <Text style={styles.dateLabel}>Pregnancy Start Date</Text>
+              )}
+              <Text style={[styles.dateValue, !hasDate && styles.placeholderText]}>
+                {formatDate(selectedDate)}
+              </Text>
+              {pregnancyWeek > 0 && hasDate && (
                 <Text style={styles.weekInfo}>Week {pregnancyWeek}</Text>
               )}
             </View>
@@ -255,6 +261,10 @@ const styles = StyleSheet.create({
     fontSize: typography.label,
     marginTop: spacing.xs,
     fontWeight: "500",
+  },
+  placeholderText: {
+    color: colors.textSecondary,
+    fontWeight: "400",
   },
   modalOverlay: {
     flex: 1,

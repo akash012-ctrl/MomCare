@@ -20,7 +20,7 @@ const { colors, spacing } = MotherhoodTheme;
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { user, signOut, preferredLanguage, updateLanguagePreference } =
+  const { user, signOut, preferredLanguage, updateLanguagePreference, resendVerificationEmail } =
     useAuth();
   const [mealHistory, setMealHistory] = useState<ImageAnalysisResult[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,6 +30,7 @@ export default function ProfileScreen() {
   const [isUpdatingLanguage, setIsUpdatingLanguage] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [activeTab, setActiveTab] = useState<'settings' | 'calendar'>('settings');
+  const [isResendingVerification, setIsResendingVerification] = useState(false);
 
   const handleSignOut = async () => {
     try {
@@ -135,6 +136,25 @@ export default function ProfileScreen() {
     }
   };
 
+  const handleResendVerification = async () => {
+    try {
+      setIsResendingVerification(true);
+      setError(null);
+      await resendVerificationEmail();
+      // Show success message
+      alert("Verification email sent! Please check your inbox.");
+    } catch (err) {
+      console.error("Error resending verification:", err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to send verification email"
+      );
+    } finally {
+      setIsResendingVerification(false);
+    }
+  };
+
   const fetchAnalysisHistory = useCallback(async () => {
     try {
       setLoading(true);
@@ -182,6 +202,7 @@ export default function ProfileScreen() {
           <ProfileHeader
             name={user?.name || "Mama"}
             email={user?.email ?? undefined}
+            emailVerified={user?.email_verified}
           />
         </MotiView>
 
@@ -208,15 +229,13 @@ export default function ProfileScreen() {
         {/* Settings Tab Content */}
         {activeTab === 'settings' && (
           <>
-            {pregnancyStartDate ? (
-              <PregnancyStartDatePicker
-                initialDate={pregnancyStartDate}
-                initialName={user?.name || ""}
-                onDateChange={handleUpdatePregnancyDate}
-                onNameChange={handleUpdateName}
-                isLoading={isUpdatingProfile}
-              />
-            ) : null}
+            <PregnancyStartDatePicker
+              initialDate={pregnancyStartDate || undefined}
+              initialName={user?.name || ""}
+              onDateChange={handleUpdatePregnancyDate}
+              onNameChange={handleUpdateName}
+              isLoading={isUpdatingProfile}
+            />
 
             <LanguageSelector
               selectedLanguage={preferredLanguage}
@@ -233,6 +252,9 @@ export default function ProfileScreen() {
             <SettingsSection
               onSignOut={handleSignOut}
               isSigningOut={isSigningOut}
+              emailVerified={user?.email_verified}
+              onResendVerification={handleResendVerification}
+              isResendingVerification={isResendingVerification}
             />
           </>
         )}
