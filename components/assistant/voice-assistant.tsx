@@ -818,13 +818,6 @@ export function VoiceAssistant({ user, language }: VoiceAssistantProps): React.R
                 userPresent={!!user?.id}
             />
 
-            <VoiceConversationView
-                ref={transcriptsRef}
-                connected={voice.connected}
-                language={language}
-                remoteStreamUrl={voice.remoteStreamUrl}
-            />
-
             <VoiceContextView
                 rows={derived.contextSummaryRows}
                 loading={context.contextLoading}

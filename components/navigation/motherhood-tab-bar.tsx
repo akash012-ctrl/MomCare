@@ -1,8 +1,8 @@
 import { Feather } from "@expo/vector-icons";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { MotiView } from "moti";
-import { useMemo } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useEffect, useMemo, useState } from "react";
+import { Keyboard, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { MotherhoodTheme } from "@/constants/theme";
 
@@ -89,6 +89,27 @@ export function MotherhoodTabBar({
     () => 100 / state.routes.length,
     [state.routes.length]
   );
+
+  const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const keyboardWillShow = Keyboard.addListener("keyboardDidShow", () => {
+      setKeyboardVisible(true);
+    });
+    const keyboardWillHide = Keyboard.addListener("keyboardDidHide", () => {
+      setKeyboardVisible(false);
+    });
+
+    return () => {
+      keyboardWillShow.remove();
+      keyboardWillHide.remove();
+    };
+  }, []);
+
+  // Hide tab bar when keyboard is visible
+  if (isKeyboardVisible) {
+    return null;
+  }
 
   return (
     <View style={styles.wrapper}>

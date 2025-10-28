@@ -23,6 +23,12 @@ export default function TabLayout() {
           name="assistant"
           options={{
             title: "Assistant",
+            tabBarStyle: { display: "flex" },
+          }}
+          listeners={{
+            focus: () => {
+              // Tab bar will be hidden via the MotherhoodTabBar component keyboard listener
+            },
           }}
         />
         <Tabs.Screen

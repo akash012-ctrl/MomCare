@@ -18,24 +18,16 @@ export default function AssistantScreen(): React.ReactElement {
   const [activeTab, setActiveTab] = useState<TabType>("chat");
   const language = preferredLanguage === "hi" ? "hi" : "en";
 
-  const subtitle = useMemo(() => {
-    if (language === "hi") {
-      return "अपनी गर्भावस्था से जुड़े किसी भी प्रश्न पर चैट या वॉयस में सहायता प्राप्त करें।";
-    }
-    return "Chat or speak with MomCare for gentle support during your pregnancy.";
-  }, [language]);
-
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.select({ ios: "padding", android: "height" })}
-        keyboardVerticalOffset={Platform.select({ ios: 90, android: 0 })}
+        behavior={Platform.select({ ios: "padding", android: undefined })}
+        keyboardVerticalOffset={Platform.select({ ios: 0, android: 0 })}
       >
         <View style={styles.container}>
           <View style={styles.header}>
             <Text style={styles.title}>MomCare Assistant</Text>
-            <Text style={styles.subtitle}>{subtitle}</Text>
           </View>
 
           <TabSelector activeTab={activeTab} onTabChange={setActiveTab} user={user} />
@@ -153,14 +145,9 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   title: {
-    fontSize: typography.display,
+    fontSize: typography.subtitle,
     fontWeight: "700",
     color: colors.textPrimary,
-  },
-  subtitle: {
-    fontSize: typography.body,
-    color: colors.textSecondary,
-    lineHeight: 22,
   },
   tabContainer: {
     flex: 1,
