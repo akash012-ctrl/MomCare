@@ -1,7 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { MotiView } from "moti";
-import { useState } from "react";
 import {
   FlatList,
   Pressable,
@@ -12,7 +11,6 @@ import {
   View
 } from "react-native";
 
-import { EmailVerificationRequired } from "@/components/ui/email-verification-required";
 import { MotherhoodTheme } from "@/constants/theme";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -53,35 +51,7 @@ const trackSections = [
 
 export default function TrackHubScreen() {
   const router = useRouter();
-  const { user, resendVerificationEmail } = useAuth();
-  const [isResending, setIsResending] = useState(false);
-
-  const handleResendEmail = async () => {
-    try {
-      setIsResending(true);
-      await resendVerificationEmail();
-      alert("Verification email sent! Please check your inbox.");
-    } catch (err) {
-      console.error("Error resending verification:", err);
-      alert("Failed to send verification email. Please try again.");
-    } finally {
-      setIsResending(false);
-    }
-  };
-
-  // Show verification required screen if email is not verified
-  if (user && !user.email_verified) {
-    return (
-      <SafeAreaView style={styles.safeArea}>
-        <EmailVerificationRequired
-          message="Please verify your email to track your pregnancy journey."
-          showNavigateButton={true}
-          isResending={isResending}
-          onResendEmail={handleResendEmail}
-        />
-      </SafeAreaView>
-    );
-  }
+  const { user } = useAuth();
 
   const renderGridItem = ({ item, index }: { item: typeof trackSections[0]; index: number }) => (
     <MotiView

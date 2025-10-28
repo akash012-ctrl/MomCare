@@ -40,7 +40,6 @@ function AuthProviderComponent({ children }: { children: React.ReactNode }) {
             name: profile?.full_name ?? data.session.user.user_metadata?.name,
             avatar_url: profile?.avatar_url,
             created_at: profile?.created_at,
-            email_verified: data.session.user.email_confirmed_at != null,
           });
 
           // Set preferred language from profile
@@ -73,7 +72,6 @@ function AuthProviderComponent({ children }: { children: React.ReactNode }) {
             name: profile?.full_name ?? session.user.user_metadata?.name,
             avatar_url: profile?.avatar_url,
             created_at: profile?.created_at,
-            email_verified: session.user.email_confirmed_at != null,
           });
 
           // Set preferred language from profile
@@ -138,7 +136,6 @@ function AuthProviderComponent({ children }: { children: React.ReactNode }) {
             id: data.user.id,
             email: data.user.email ?? "",
             name,
-            email_verified: false,
           });
         }
       } catch (err) {
@@ -189,7 +186,6 @@ function AuthProviderComponent({ children }: { children: React.ReactNode }) {
           name: profile?.full_name ?? data.user.user_metadata?.name,
           avatar_url: profile?.avatar_url,
           created_at: profile?.created_at,
-          email_verified: data.user.email_confirmed_at != null,
         });
       }
     } catch (err) {
@@ -270,35 +266,6 @@ function AuthProviderComponent({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const resendVerificationEmail = useCallback(async () => {
-    try {
-      if (!user?.email) {
-        throw new Error("No email found");
-      }
-
-      setAuthError(null);
-      setIsLoading(true);
-
-      const { error } = await supabase.auth.resend({
-        type: 'signup',
-        email: user.email,
-      });
-
-      if (error) throw error;
-
-      // Success - no need to set anything, just complete
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error
-          ? err.message
-          : "Failed to resend verification email";
-      setAuthError(errorMessage);
-      throw err;
-    } finally {
-      setIsLoading(false);
-    }
-  }, [user]);
-
   const value: AuthContextType = {
     user,
     isLoading,
@@ -310,7 +277,6 @@ function AuthProviderComponent({ children }: { children: React.ReactNode }) {
     resetPassword,
     preferredLanguage,
     updateLanguagePreference,
-    resendVerificationEmail,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

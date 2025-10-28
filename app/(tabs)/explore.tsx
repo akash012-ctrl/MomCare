@@ -2,7 +2,6 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
 import React, { useCallback, useMemo, useState } from "react";
 import { Linking, Share, StyleSheet } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ExploreArticleList } from "@/components/explore/article-list";
 import { CategoryFilterList } from "@/components/explore/category-filter-list";
@@ -13,7 +12,6 @@ import { type TabConfig } from "@/components/explore/tab-button";
 import type { Article } from "@/components/explore/types";
 import { ThemedView } from "@/components/themed-view";
 import { useAppAlert, type ShowAlertOptions } from "@/components/ui/app-alert";
-import { EmailVerificationRequired } from "@/components/ui/email-verification-required";
 import { MotherhoodTheme } from "@/constants/theme";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/lib/supabase";
@@ -176,33 +174,13 @@ function filterArticles({
 
 export default function ExploreScreen() {
   const { showAlert } = useAppAlert();
-  const { user, resendVerificationEmail } = useAuth();
+  const { user } = useAuth();
   const { articles, tips, loading, loadArticles } = useExploreArticles(showAlert);
   const { savedArticles, toggleSavedArticle, loadSavedArticles } =
     useSavedArticles(showAlert);
   const [activeTab, setActiveTab] = useState<TabId>("resources");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
-  const [isResending, setIsResending] = useState(false);
-
-  const handleResendEmail = async () => {
-    try {
-      setIsResending(true);
-      await resendVerificationEmail();
-      showAlert({
-        title: "Success",
-        message: "Verification email sent! Please check your inbox.",
-      });
-    } catch (err) {
-      console.error("Error resending verification:", err);
-      showAlert({
-        title: "Error",
-        message: "Failed to send verification email. Please try again.",
-      });
-    } finally {
-      setIsResending(false);
-    }
-  };
 
   useFocusEffect(
     useCallback(() => {
@@ -272,20 +250,6 @@ export default function ExploreScreen() {
   );
 
   const clearSearch = useCallback(() => setSearchQuery(""), []);
-
-  // Show verification required screen if email is not verified
-  if (user && !user.email_verified) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <EmailVerificationRequired
-          message="Please verify your email to explore pregnancy resources and tips."
-          showNavigateButton={true}
-          isResending={isResending}
-          onResendEmail={handleResendEmail}
-        />
-      </SafeAreaView>
-    );
-  }
 
   return (
     <ThemedView style={styles.container}>

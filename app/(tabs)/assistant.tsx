@@ -5,7 +5,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ChatAssistantTab } from "@/components/assistant/chat-tab";
 import { VoiceAssistant } from "@/components/assistant/voice-assistant";
-import { EmailVerificationRequired } from "@/components/ui/email-verification-required";
 import { MotherhoodTheme } from "@/constants/theme";
 import { useAuth } from "@/hooks/use-auth";
 import type { User } from "@/lib/types";
@@ -15,37 +14,9 @@ const { colors, spacing, typography, radii, shadows } = MotherhoodTheme;
 type TabType = "chat" | "voice";
 
 export default function AssistantScreen(): React.ReactElement {
-  const { user, preferredLanguage, resendVerificationEmail } = useAuth();
+  const { user, preferredLanguage } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>("chat");
-  const [isResending, setIsResending] = useState(false);
   const language = preferredLanguage === "hi" ? "hi" : "en";
-
-  const handleResendEmail = async () => {
-    try {
-      setIsResending(true);
-      await resendVerificationEmail();
-      alert("Verification email sent! Please check your inbox.");
-    } catch (err) {
-      console.error("Error resending verification:", err);
-      alert("Failed to send verification email. Please try again.");
-    } finally {
-      setIsResending(false);
-    }
-  };
-
-  // Show verification required screen if email is not verified
-  if (user && !user.email_verified) {
-    return (
-      <SafeAreaView style={styles.safeArea} edges={["top"]}>
-        <EmailVerificationRequired
-          message="Please verify your email to use the AI assistant."
-          showNavigateButton={true}
-          isResending={isResending}
-          onResendEmail={handleResendEmail}
-        />
-      </SafeAreaView>
-    );
-  }
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
