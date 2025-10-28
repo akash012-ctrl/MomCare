@@ -524,9 +524,10 @@ export function useRealtimeVoice({
                         setRemoteStreamUrlState(null);
                     }
 
-                    // Route audio to speaker for voice assistant
-                    InCallManager.start({ media: "audio", ringback: "" });
-                    InCallManager.setForceSpeakerphoneOn(true);
+                    // Route audio to main loudspeaker (not earpiece)
+                    InCallManager.start({ media: "audio" });
+                    InCallManager.setSpeakerphoneOn(true);
+                    InCallManager.setForceSpeakerphoneOn(false);
                 }
             };
 
