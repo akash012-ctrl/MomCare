@@ -8,6 +8,8 @@ import { LinearGradient } from "expo-linear-gradient";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -90,181 +92,187 @@ export default function MealLoggingScreen(): React.ReactElement {
   const mealData = result?.result as MealAnalysisResult | undefined;
 
   return (
-    <View style={[styles.container, { backgroundColor }]}>
-      <LinearGradient
-        colors={["#FFB6C1", "#FF9FA3"]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={[styles.header, { paddingTop: insets.top }]}
-      >
-        <View style={styles.headerContent}>
-          <Ionicons name="restaurant" size={32} color="#fff" />
-          <View style={styles.headerText}>
-            <Text style={styles.headerTitle}>Meal Logging</Text>
-            <Text style={styles.headerSubtitle}>Track your nutrition</Text>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.select({ ios: "padding", android: "height" })}
+      keyboardVerticalOffset={Platform.select({ ios: 0, android: 20 })}
+    >
+      <View style={[styles.container, { backgroundColor }]}>
+        <LinearGradient
+          colors={["#FFB6C1", "#FF9FA3"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[styles.header, { paddingTop: insets.top }]}
+        >
+          <View style={styles.headerContent}>
+            <Ionicons name="restaurant" size={32} color="#fff" />
+            <View style={styles.headerText}>
+              <Text style={styles.headerTitle}>Meal Logging</Text>
+              <Text style={styles.headerSubtitle}>Track your nutrition</Text>
+            </View>
           </View>
-        </View>
-      </LinearGradient>
+        </LinearGradient>
 
-      <ScrollView
-        style={styles.content}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
-      >
-        {/* Image Picker Section */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: textColor }]}>
-            1. Take a Photo
-          </Text>
-          <ImagePicker
-            onImageSelected={handleImageSelected}
-            previewSize={160}
-            maxSizeMB={5}
-          />
-          {loading && (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#FF9FA3" />
-              <Text style={[styles.loadingText, { color: textColor }]}>
-                Analyzing meal...
-              </Text>
-            </View>
-          )}
-          {error && (
-            <View style={styles.errorContainer}>
-              <Ionicons name="alert-circle" size={20} color="#FF6B6B" />
-              <Text style={styles.errorText}>{error}</Text>
-            </View>
-          )}
-        </View>
-
-        {/* Analysis Results Section */}
-        {success && mealData && (
+        <ScrollView
+          style={styles.content}
+          contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
+        >
+          {/* Image Picker Section */}
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: textColor }]}>
-              2. Analysis Results
+              1. Take a Photo
             </Text>
-
-            {/* Calories Summary */}
-            <View style={styles.resultCard}>
-              <View style={styles.caloriesContainer}>
-                <Ionicons name="flame" size={32} color="#FF6B6B" />
-                <View style={styles.caloriesContent}>
-                  <Text style={[styles.caloriesValue, { color: textColor }]}>
-                    {mealData.totalCalories}
-                  </Text>
-                  <Text style={[styles.caloriesLabel, { color: textColor }]}>
-                    calories
-                  </Text>
-                </View>
-              </View>
-
-              {/* Macronutrients */}
-              <View style={styles.macroGrid}>
-                <MacroCard
-                  icon="flask"
-                  label="Protein"
-                  value={
-                    mealData.meals && mealData.meals[0]?.macronutrients?.protein
-                      ? `${mealData.meals[0].macronutrients.protein.toFixed(
-                          1
-                        )}g`
-                      : "N/A"
-                  }
-                  color="#FF9FA3"
-                />
-                <MacroCard
-                  icon="nutrition"
-                  label="Carbs"
-                  value={
-                    mealData.meals && mealData.meals[0]?.macronutrients?.carbs
-                      ? `${mealData.meals[0].macronutrients.carbs.toFixed(1)}g`
-                      : "N/A"
-                  }
-                  color="#FFCCCB"
-                />
-                <MacroCard
-                  icon="droplet"
-                  label="Fat"
-                  value={
-                    mealData.meals && mealData.meals[0]?.macronutrients?.fat
-                      ? `${mealData.meals[0].macronutrients.fat.toFixed(1)}g`
-                      : "N/A"
-                  }
-                  color="#FFA07A"
-                />
-              </View>
-
-              {/* Foods Detected */}
-              <View style={styles.foodsSection}>
-                <Text style={[styles.foodsTitle, { color: textColor }]}>
-                  Foods Detected:
+            <ImagePicker
+              onImageSelected={handleImageSelected}
+              previewSize={160}
+              maxSizeMB={5}
+            />
+            {loading && (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#FF9FA3" />
+                <Text style={[styles.loadingText, { color: textColor }]}>
+                  Analyzing meal...
                 </Text>
-                {mealData.meals?.map((meal: any, idx: number) => (
-                  <View key={idx} style={styles.foodItem}>
-                    <Text style={[styles.foodName, { color: textColor }]}>
-                      {meal.name}
+              </View>
+            )}
+            {error && (
+              <View style={styles.errorContainer}>
+                <Ionicons name="alert-circle" size={20} color="#FF6B6B" />
+                <Text style={styles.errorText}>{error}</Text>
+              </View>
+            )}
+          </View>
+
+          {/* Analysis Results Section */}
+          {success && mealData && (
+            <View style={styles.section}>
+              <Text style={[styles.sectionTitle, { color: textColor }]}>
+                2. Analysis Results
+              </Text>
+
+              {/* Calories Summary */}
+              <View style={styles.resultCard}>
+                <View style={styles.caloriesContainer}>
+                  <Ionicons name="flame" size={32} color="#FF6B6B" />
+                  <View style={styles.caloriesContent}>
+                    <Text style={[styles.caloriesValue, { color: textColor }]}>
+                      {mealData.totalCalories}
                     </Text>
-                    <Text style={styles.foodCalories}>
-                      {meal.estimatedCalories} cal (
-                      {(meal.confidence * 100).toFixed(0)}%)
+                    <Text style={[styles.caloriesLabel, { color: textColor }]}>
+                      calories
                     </Text>
                   </View>
-                ))}
-              </View>
-
-              {/* Nutrition Summary */}
-              {mealData.nutritionSummary && (
-                <View style={styles.summaryBox}>
-                  <Text style={[styles.summaryTitle, { color: textColor }]}>
-                    Summary
-                  </Text>
-                  <Text style={[styles.summaryText, { color: textColor }]}>
-                    {mealData.nutritionSummary}
-                  </Text>
                 </View>
-              )}
+
+                {/* Macronutrients */}
+                <View style={styles.macroGrid}>
+                  <MacroCard
+                    icon="flask"
+                    label="Protein"
+                    value={
+                      mealData.meals && mealData.meals[0]?.macronutrients?.protein
+                        ? `${mealData.meals[0].macronutrients.protein.toFixed(
+                          1
+                        )}g`
+                        : "N/A"
+                    }
+                    color="#FF9FA3"
+                  />
+                  <MacroCard
+                    icon="nutrition"
+                    label="Carbs"
+                    value={
+                      mealData.meals && mealData.meals[0]?.macronutrients?.carbs
+                        ? `${mealData.meals[0].macronutrients.carbs.toFixed(1)}g`
+                        : "N/A"
+                    }
+                    color="#FFCCCB"
+                  />
+                  <MacroCard
+                    icon="droplet"
+                    label="Fat"
+                    value={
+                      mealData.meals && mealData.meals[0]?.macronutrients?.fat
+                        ? `${mealData.meals[0].macronutrients.fat.toFixed(1)}g`
+                        : "N/A"
+                    }
+                    color="#FFA07A"
+                  />
+                </View>
+
+                {/* Foods Detected */}
+                <View style={styles.foodsSection}>
+                  <Text style={[styles.foodsTitle, { color: textColor }]}>
+                    Foods Detected:
+                  </Text>
+                  {mealData.meals?.map((meal: any, idx: number) => (
+                    <View key={idx} style={styles.foodItem}>
+                      <Text style={[styles.foodName, { color: textColor }]}>
+                        {meal.name}
+                      </Text>
+                      <Text style={styles.foodCalories}>
+                        {meal.estimatedCalories} cal (
+                        {(meal.confidence * 100).toFixed(0)}%)
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+
+                {/* Nutrition Summary */}
+                {mealData.nutritionSummary && (
+                  <View style={styles.summaryBox}>
+                    <Text style={[styles.summaryTitle, { color: textColor }]}>
+                      Summary
+                    </Text>
+                    <Text style={[styles.summaryText, { color: textColor }]}>
+                      {mealData.nutritionSummary}
+                    </Text>
+                  </View>
+                )}
+              </View>
             </View>
-          </View>
-        )}
+          )}
 
-        {/* Notes Section */}
-        {success && mealData && (
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: textColor }]}>
-              3. Add Notes
-            </Text>
-            <TextInput
-              style={[
-                styles.notesInput,
-                { borderColor: "#FFB6C1", color: textColor },
-              ]}
-              placeholder="Add any notes about this meal (optional)"
-              placeholderTextColor="#999"
-              value={mealNotes}
-              onChangeText={setMealNotes}
-              multiline
-            />
-          </View>
-        )}
+          {/* Notes Section */}
+          {success && mealData && (
+            <View style={styles.section}>
+              <Text style={[styles.sectionTitle, { color: textColor }]}>
+                3. Add Notes
+              </Text>
+              <TextInput
+                style={[
+                  styles.notesInput,
+                  { borderColor: "#FFB6C1", color: textColor },
+                ]}
+                placeholder="Add any notes about this meal (optional)"
+                placeholderTextColor="#999"
+                value={mealNotes}
+                onChangeText={setMealNotes}
+                multiline
+              />
+            </View>
+          )}
 
-        {/* Save Button */}
-        {success && mealData && (
-          <TouchableOpacity
-            style={[styles.saveButton, submitting && styles.saveButtonDisabled]}
-            onPress={handleSaveMeal}
-            disabled={submitting}
-          >
-            {submitting ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <>
-                <Ionicons name="checkmark-circle" size={24} color="#fff" />
-                <Text style={styles.saveButtonText}>Save Meal</Text>
-              </>
-            )}
-          </TouchableOpacity>
-        )}
-      </ScrollView>
-    </View>
+          {/* Save Button */}
+          {success && mealData && (
+            <TouchableOpacity
+              style={[styles.saveButton, submitting && styles.saveButtonDisabled]}
+              onPress={handleSaveMeal}
+              disabled={submitting}
+            >
+              {submitting ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <>
+                  <Ionicons name="checkmark-circle" size={24} color="#fff" />
+                  <Text style={styles.saveButtonText}>Save Meal</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          )}
+        </ScrollView>
+      </View>
+    </KeyboardAvoidingView>
   );
 }
 

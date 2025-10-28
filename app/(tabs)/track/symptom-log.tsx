@@ -4,7 +4,9 @@ import { MotiView } from "moti";
 import { useCallback, useEffect, useState } from "react";
 import {
   FlatList,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   Pressable,
   RefreshControl,
   SafeAreaView,
@@ -197,135 +199,141 @@ export default function SymptomLog() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()}>
-          <Feather name="arrow-left" size={24} color={colors.textPrimary} />
-        </Pressable>
-        <Text style={styles.headerTitle}>Symptom Log</Text>
-        <View style={{ width: 24 }} />
-      </View>
-
-      {/* Quick Log Section */}
-      <View style={styles.quickLogSection}>
-        <Text style={styles.sectionTitle}>Quick Log</Text>
-        <View style={styles.symptomGrid}>
-          {COMMON_SYMPTOMS.map((symptom) => (
-            <Pressable
-              key={symptom.name}
-              style={[styles.quickLogCard, { backgroundColor: symptom.color }]}
-              onPress={() => handleOpenModal(symptom.name)}
-            >
-              <Text style={styles.quickLogIcon}>{symptom.icon}</Text>
-              <Text style={styles.quickLogName}>{symptom.name}</Text>
-            </Pressable>
-          ))}
-        </View>
-      </View>
-
-      {/* History */}
-      <View style={styles.historySection}>
-        <Text style={styles.sectionTitle}>Recent Symptoms</Text>
-        <FlatList
-          data={symptoms}
-          keyExtractor={(item) => item.id}
-          renderItem={renderSymptomCard}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-          }
-          contentContainerStyle={styles.listContent}
-          ListEmptyComponent={
-            <View style={styles.emptyState}>
-              <Feather
-                name="clipboard"
-                size={48}
-                color={colors.textSecondary}
-              />
-              <Text style={styles.emptyText}>No symptoms logged yet</Text>
-              <Text style={styles.emptySubtext}>
-                Tap a symptom above to start tracking
-              </Text>
-            </View>
-          }
-        />
-      </View>
-
-      {/* Log Symptom Modal */}
-      <Modal
-        visible={modalVisible}
-        animationType="slide"
-        transparent
-        onRequestClose={() => setModalVisible(false)}
+      <KeyboardAvoidingView
+        behavior={Platform.select({ ios: "padding", android: "height" })}
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={Platform.select({ ios: 0, android: 20 })}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Log {selectedSymptom}</Text>
-              <Pressable onPress={() => setModalVisible(false)}>
-                <Feather name="x" size={24} color={colors.textPrimary} />
+        {/* Header */}
+        <View style={styles.header}>
+          <Pressable onPress={() => router.back()}>
+            <Feather name="arrow-left" size={24} color={colors.textPrimary} />
+          </Pressable>
+          <Text style={styles.headerTitle}>Symptom Log</Text>
+          <View style={{ width: 24 }} />
+        </View>
+
+        {/* Quick Log Section */}
+        <View style={styles.quickLogSection}>
+          <Text style={styles.sectionTitle}>Quick Log</Text>
+          <View style={styles.symptomGrid}>
+            {COMMON_SYMPTOMS.map((symptom) => (
+              <Pressable
+                key={symptom.name}
+                style={[styles.quickLogCard, { backgroundColor: symptom.color }]}
+                onPress={() => handleOpenModal(symptom.name)}
+              >
+                <Text style={styles.quickLogIcon}>{symptom.icon}</Text>
+                <Text style={styles.quickLogName}>{symptom.name}</Text>
               </Pressable>
-            </View>
-
-            {/* Severity Selector */}
-            <View style={styles.modalSection}>
-              <Text style={styles.modalLabel}>Severity</Text>
-              <View style={styles.severitySelector}>
-                {SEVERITY_LEVELS.map((level) => (
-                  <Pressable
-                    key={level.value}
-                    style={[
-                      styles.severityOption,
-                      {
-                        backgroundColor:
-                          selectedSeverity === level.value
-                            ? level.color
-                            : colors.surface,
-                      },
-                    ]}
-                    onPress={() => setSelectedSeverity(level.value)}
-                  >
-                    <Text
-                      style={[
-                        styles.severityOptionText,
-                        selectedSeverity === level.value &&
-                          styles.severityOptionTextActive,
-                      ]}
-                    >
-                      {level.value}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
-              <Text style={styles.severityLabel}>
-                {
-                  SEVERITY_LEVELS.find((l) => l.value === selectedSeverity)
-                    ?.label
-                }
-              </Text>
-            </View>
-
-            {/* Notes */}
-            <View style={styles.modalSection}>
-              <Text style={styles.modalLabel}>Notes (optional)</Text>
-              <TextInput
-                style={styles.notesInput}
-                placeholder="Any additional details..."
-                placeholderTextColor={colors.textSecondary}
-                value={notes}
-                onChangeText={setNotes}
-                multiline
-                numberOfLines={3}
-                textAlignVertical="top"
-              />
-            </View>
-
-            {/* Save Button */}
-            <Pressable style={styles.saveButton} onPress={handleSaveSymptom}>
-              <Text style={styles.saveButtonText}>Log Symptom</Text>
-            </Pressable>
+            ))}
           </View>
         </View>
-      </Modal>
+
+        {/* History */}
+        <View style={styles.historySection}>
+          <Text style={styles.sectionTitle}>Recent Symptoms</Text>
+          <FlatList
+            data={symptoms}
+            keyExtractor={(item) => item.id}
+            renderItem={renderSymptomCard}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            }
+            contentContainerStyle={styles.listContent}
+            ListEmptyComponent={
+              <View style={styles.emptyState}>
+                <Feather
+                  name="clipboard"
+                  size={48}
+                  color={colors.textSecondary}
+                />
+                <Text style={styles.emptyText}>No symptoms logged yet</Text>
+                <Text style={styles.emptySubtext}>
+                  Tap a symptom above to start tracking
+                </Text>
+              </View>
+            }
+          />
+        </View>
+
+        {/* Log Symptom Modal */}
+        <Modal
+          visible={modalVisible}
+          animationType="slide"
+          transparent
+          onRequestClose={() => setModalVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Log {selectedSymptom}</Text>
+                <Pressable onPress={() => setModalVisible(false)}>
+                  <Feather name="x" size={24} color={colors.textPrimary} />
+                </Pressable>
+              </View>
+
+              {/* Severity Selector */}
+              <View style={styles.modalSection}>
+                <Text style={styles.modalLabel}>Severity</Text>
+                <View style={styles.severitySelector}>
+                  {SEVERITY_LEVELS.map((level) => (
+                    <Pressable
+                      key={level.value}
+                      style={[
+                        styles.severityOption,
+                        {
+                          backgroundColor:
+                            selectedSeverity === level.value
+                              ? level.color
+                              : colors.surface,
+                        },
+                      ]}
+                      onPress={() => setSelectedSeverity(level.value)}
+                    >
+                      <Text
+                        style={[
+                          styles.severityOptionText,
+                          selectedSeverity === level.value &&
+                          styles.severityOptionTextActive,
+                        ]}
+                      >
+                        {level.value}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+                <Text style={styles.severityLabel}>
+                  {
+                    SEVERITY_LEVELS.find((l) => l.value === selectedSeverity)
+                      ?.label
+                  }
+                </Text>
+              </View>
+
+              {/* Notes */}
+              <View style={styles.modalSection}>
+                <Text style={styles.modalLabel}>Notes (optional)</Text>
+                <TextInput
+                  style={styles.notesInput}
+                  placeholder="Any additional details..."
+                  placeholderTextColor={colors.textSecondary}
+                  value={notes}
+                  onChangeText={setNotes}
+                  multiline
+                  numberOfLines={3}
+                  textAlignVertical="top"
+                />
+              </View>
+
+              {/* Save Button */}
+              <Pressable style={styles.saveButton} onPress={handleSaveSymptom}>
+                <Text style={styles.saveButtonText}>Log Symptom</Text>
+              </Pressable>
+            </View>
+          </View>
+        </Modal>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

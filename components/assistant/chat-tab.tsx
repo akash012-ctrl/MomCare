@@ -12,12 +12,10 @@ import React, {
 import {
     ActivityIndicator,
     FlatList,
-    KeyboardAvoidingView,
-    Platform,
     Pressable,
     StyleSheet,
     Text,
-    View,
+    View
 } from "react-native";
 
 import { ChatInput } from "@/components/assistant/chat-input";
@@ -531,10 +529,7 @@ export function ChatAssistantTab({
 
             <ChatErrorBanner error={error} onDismiss={() => setError(null)} />
 
-            <KeyboardAvoidingView
-                behavior={Platform.select({ ios: "padding", android: undefined })}
-                style={styles.keyboardAvoid}
-            >
+            <View style={styles.inputWrapper}>
                 <AttachmentPreviewList
                     attachments={attachments.attachments}
                     onRemove={attachments.removeAttachment}
@@ -548,7 +543,7 @@ export function ChatAssistantTab({
                     hasAttachments={attachments.attachments.length > 0}
                     isAttachmentUploading={attachments.isAttachmentUploading}
                 />
-            </KeyboardAvoidingView>
+            </View>
         </View>
     );
 }
@@ -721,7 +716,7 @@ const styles = StyleSheet.create({
         color: colors.primary,
         fontWeight: "500",
     },
-    keyboardAvoid: {
+    inputWrapper: {
         width: "100%",
     },
     attachmentPreviewContainer: {

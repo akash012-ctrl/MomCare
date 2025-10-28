@@ -1,6 +1,6 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import React, { useMemo, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ChatAssistantTab } from "@/components/assistant/chat-tab";
@@ -27,22 +27,28 @@ export default function AssistantScreen(): React.ReactElement {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.title}>MomCare Assistant</Text>
-          <Text style={styles.subtitle}>{subtitle}</Text>
-        </View>
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.select({ ios: "padding", android: "height" })}
+        keyboardVerticalOffset={Platform.select({ ios: 90, android: 0 })}
+      >
+        <View style={styles.container}>
+          <View style={styles.header}>
+            <Text style={styles.title}>MomCare Assistant</Text>
+            <Text style={styles.subtitle}>{subtitle}</Text>
+          </View>
 
-        <TabSelector activeTab={activeTab} onTabChange={setActiveTab} user={user} />
+          <TabSelector activeTab={activeTab} onTabChange={setActiveTab} user={user} />
 
-        <View style={styles.tabContainer}>
-          {activeTab === "chat" ? (
-            <ChatAssistantTab user={user} language={language} />
-          ) : (
-            <VoiceAssistant user={user} language={language} />
-          )}
+          <View style={styles.tabContainer}>
+            {activeTab === "chat" ? (
+              <ChatAssistantTab user={user} language={language} />
+            ) : (
+              <VoiceAssistant user={user} language={language} />
+            )}
+          </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -133,6 +139,9 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  flex: {
+    flex: 1,
   },
   container: {
     flex: 1,

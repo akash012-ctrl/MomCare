@@ -4,7 +4,9 @@ import { MotiView } from "moti";
 import { useCallback, useEffect, useState } from "react";
 import {
   FlatList,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   Pressable,
   RefreshControl,
   SafeAreaView,
@@ -316,138 +318,144 @@ export default function Goals() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()}>
-          <Feather name="arrow-left" size={24} color={colors.textPrimary} />
-        </Pressable>
-        <Text style={styles.headerTitle}>My Goals</Text>
-        <Pressable onPress={() => setModalVisible(true)}>
-          <Feather name="plus" size={24} color={colors.primary} />
-        </Pressable>
-      </View>
-
-      <FlatList
-        data={[...activeGoals, ...completedGoals]}
-        keyExtractor={(item) => item.id}
-        renderItem={renderGoalCard}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-        contentContainerStyle={styles.listContent}
-        ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Feather name="target" size={48} color={colors.textSecondary} />
-            <Text style={styles.emptyText}>No goals yet</Text>
-            <Text style={styles.emptySubtext}>
-              Tap + to create your first goal
-            </Text>
-          </View>
-        }
-      />
-
-      {/* Create Goal Modal */}
-      <Modal
-        visible={modalVisible}
-        animationType="slide"
-        transparent
-        onRequestClose={() => setModalVisible(false)}
+      <KeyboardAvoidingView
+        behavior={Platform.select({ ios: "padding", android: "height" })}
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={Platform.select({ ios: 0, android: 20 })}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>New Goal</Text>
-              <Pressable onPress={() => setModalVisible(false)}>
-                <Feather name="x" size={24} color={colors.textPrimary} />
+        {/* Header */}
+        <View style={styles.header}>
+          <Pressable onPress={() => router.back()}>
+            <Feather name="arrow-left" size={24} color={colors.textPrimary} />
+          </Pressable>
+          <Text style={styles.headerTitle}>My Goals</Text>
+          <Pressable onPress={() => setModalVisible(true)}>
+            <Feather name="plus" size={24} color={colors.primary} />
+          </Pressable>
+        </View>
+
+        <FlatList
+          data={[...activeGoals, ...completedGoals]}
+          keyExtractor={(item) => item.id}
+          renderItem={renderGoalCard}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+          contentContainerStyle={styles.listContent}
+          ListEmptyComponent={
+            <View style={styles.emptyState}>
+              <Feather name="target" size={48} color={colors.textSecondary} />
+              <Text style={styles.emptyText}>No goals yet</Text>
+              <Text style={styles.emptySubtext}>
+                Tap + to create your first goal
+              </Text>
+            </View>
+          }
+        />
+
+        {/* Create Goal Modal */}
+        <Modal
+          visible={modalVisible}
+          animationType="slide"
+          transparent
+          onRequestClose={() => setModalVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>New Goal</Text>
+                <Pressable onPress={() => setModalVisible(false)}>
+                  <Feather name="x" size={24} color={colors.textPrimary} />
+                </Pressable>
+              </View>
+
+              {/* Title */}
+              <View style={styles.modalSection}>
+                <Text style={styles.modalLabel}>Goal Title</Text>
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="e.g., Daily walk for 30 minutes"
+                  placeholderTextColor={colors.textSecondary}
+                  value={title}
+                  onChangeText={setTitle}
+                />
+              </View>
+
+              {/* Category */}
+              <View style={styles.modalSection}>
+                <Text style={styles.modalLabel}>Category</Text>
+                <View style={styles.categoryGrid}>
+                  {GOAL_CATEGORIES.map((cat) => (
+                    <Pressable
+                      key={cat.name}
+                      style={[
+                        styles.categoryCard,
+                        {
+                          backgroundColor:
+                            category === cat.name ? cat.color : colors.surface,
+                        },
+                      ]}
+                      onPress={() => setCategory(cat.name)}
+                    >
+                      <Text style={styles.categoryIcon}>{cat.icon}</Text>
+                      <Text
+                        style={[
+                          styles.categoryName,
+                          category === cat.name && styles.categoryNameActive,
+                        ]}
+                      >
+                        {cat.name}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+
+              {/* Target & Unit */}
+              <View style={styles.modalSection}>
+                <Text style={styles.modalLabel}>Target</Text>
+                <View style={styles.targetRow}>
+                  <TextInput
+                    style={[styles.textInput, styles.targetInput]}
+                    placeholder="10"
+                    placeholderTextColor={colors.textSecondary}
+                    value={targetValue}
+                    onChangeText={setTargetValue}
+                    keyboardType="number-pad"
+                  />
+                  <TextInput
+                    style={[styles.textInput, styles.unitInput]}
+                    placeholder="times"
+                    placeholderTextColor={colors.textSecondary}
+                    value={unit}
+                    onChangeText={setUnit}
+                  />
+                </View>
+              </View>
+
+              {/* Description */}
+              <View style={styles.modalSection}>
+                <Text style={styles.modalLabel}>Description (optional)</Text>
+                <TextInput
+                  style={[styles.textInput, styles.textArea]}
+                  placeholder="Add more details..."
+                  placeholderTextColor={colors.textSecondary}
+                  value={description}
+                  onChangeText={setDescription}
+                  multiline
+                  numberOfLines={3}
+                  textAlignVertical="top"
+                />
+              </View>
+
+              {/* Create Button */}
+              <Pressable style={styles.saveButton} onPress={handleCreateGoal}>
+                <Text style={styles.saveButtonText}>Create Goal</Text>
               </Pressable>
             </View>
-
-            {/* Title */}
-            <View style={styles.modalSection}>
-              <Text style={styles.modalLabel}>Goal Title</Text>
-              <TextInput
-                style={styles.textInput}
-                placeholder="e.g., Daily walk for 30 minutes"
-                placeholderTextColor={colors.textSecondary}
-                value={title}
-                onChangeText={setTitle}
-              />
-            </View>
-
-            {/* Category */}
-            <View style={styles.modalSection}>
-              <Text style={styles.modalLabel}>Category</Text>
-              <View style={styles.categoryGrid}>
-                {GOAL_CATEGORIES.map((cat) => (
-                  <Pressable
-                    key={cat.name}
-                    style={[
-                      styles.categoryCard,
-                      {
-                        backgroundColor:
-                          category === cat.name ? cat.color : colors.surface,
-                      },
-                    ]}
-                    onPress={() => setCategory(cat.name)}
-                  >
-                    <Text style={styles.categoryIcon}>{cat.icon}</Text>
-                    <Text
-                      style={[
-                        styles.categoryName,
-                        category === cat.name && styles.categoryNameActive,
-                      ]}
-                    >
-                      {cat.name}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
-            </View>
-
-            {/* Target & Unit */}
-            <View style={styles.modalSection}>
-              <Text style={styles.modalLabel}>Target</Text>
-              <View style={styles.targetRow}>
-                <TextInput
-                  style={[styles.textInput, styles.targetInput]}
-                  placeholder="10"
-                  placeholderTextColor={colors.textSecondary}
-                  value={targetValue}
-                  onChangeText={setTargetValue}
-                  keyboardType="number-pad"
-                />
-                <TextInput
-                  style={[styles.textInput, styles.unitInput]}
-                  placeholder="times"
-                  placeholderTextColor={colors.textSecondary}
-                  value={unit}
-                  onChangeText={setUnit}
-                />
-              </View>
-            </View>
-
-            {/* Description */}
-            <View style={styles.modalSection}>
-              <Text style={styles.modalLabel}>Description (optional)</Text>
-              <TextInput
-                style={[styles.textInput, styles.textArea]}
-                placeholder="Add more details..."
-                placeholderTextColor={colors.textSecondary}
-                value={description}
-                onChangeText={setDescription}
-                multiline
-                numberOfLines={3}
-                textAlignVertical="top"
-              />
-            </View>
-
-            {/* Create Button */}
-            <Pressable style={styles.saveButton} onPress={handleCreateGoal}>
-              <Text style={styles.saveButtonText}>Create Goal</Text>
-            </Pressable>
           </View>
-        </View>
-      </Modal>
+        </Modal>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

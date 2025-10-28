@@ -205,10 +205,11 @@ export default function LoginScreen() {
       end={{ x: 1, y: 1 }}
       style={styles.gradient}
     >
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
         <KeyboardAvoidingView
           style={styles.flex}
-          behavior={Platform.select({ ios: "padding", android: undefined })}
+          behavior={Platform.select({ ios: "padding", android: "height" })}
+          keyboardVerticalOffset={Platform.select({ ios: 0, android: 20 })}
         >
           <View style={styles.container}>
             <MotiView
