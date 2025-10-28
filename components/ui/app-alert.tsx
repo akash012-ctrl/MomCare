@@ -193,17 +193,11 @@ function AlertModal({ alert, onDismiss, onActionPress }: AlertModalProps) {
                 color={TYPE_STYLES[alert.type].color}
               />
             </View>
-            <ThemedText
-              style={styles.title}
-              lightColor={MotherhoodTheme.colors.textPrimary}
-            >
+            <ThemedText style={styles.title}>
               {alert.title}
             </ThemedText>
-            {alert.message ? (
-              <ThemedText
-                style={styles.message}
-                lightColor={MotherhoodTheme.colors.textSecondary}
-              >
+            {alert.message && alert.message.trim() !== "" ? (
+              <ThemedText style={styles.message}>
                 {alert.message}
               </ThemedText>
             ) : null}
@@ -224,8 +218,7 @@ function AlertModal({ alert, onDismiss, onActionPress }: AlertModalProps) {
                     ]}
                   >
                     <ThemedText
-                      style={styles.actionText}
-                      lightColor={toneStyle.textColor}
+                      style={[styles.actionText, { color: toneStyle.textColor }]}
                     >
                       {action.text}
                     </ThemedText>
@@ -312,11 +305,14 @@ const styles = StyleSheet.create({
     fontSize: MotherhoodTheme.typography.title,
     fontWeight: "700",
     textAlign: "center",
+    color: MotherhoodTheme.colors.textPrimary,
   },
   message: {
     fontSize: MotherhoodTheme.typography.body,
     textAlign: "center",
     lineHeight: 22,
+    color: MotherhoodTheme.colors.textSecondary,
+    marginTop: MotherhoodTheme.spacing.xs,
   },
   actions: {
     marginTop: MotherhoodTheme.spacing.lg,
