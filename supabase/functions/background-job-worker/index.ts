@@ -21,76 +21,6 @@ const jobHandlers: Record<
         ) => Promise<Record<string, unknown>>
     }
 > = {
-    "image-analysis": {
-        handle: async (job, supabaseClient) => {
-            const { imageUrl, analysisType } = job.payload as {
-                imageUrl: string
-                analysisType: string
-            }
-
-            // Call image-analyzer Edge Function
-            const edgeFunctionUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/image-analyzer`
-            const response = await fetch(edgeFunctionUrl, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
-                },
-                body: JSON.stringify({
-                    imageUrl,
-                    analysisType,
-                    userId: job.user_id,
-                }),
-            })
-
-            if (!response.ok) {
-                throw new Error(`Image analysis failed: ${response.statusText}`)
-            }
-
-            return await response.json()
-        },
-    },
-    "generate-nutrition-report": {
-        handle: async (job, supabaseClient) => {
-            const { mealsData } = job.payload as {
-                mealsData: { calories: number }[]
-            }
-
-            // Aggregate nutrition data and generate report
-            const totalCalories = mealsData.reduce((sum, meal) => sum + meal.calories, 0)
-            const report = {
-                totalCalories,
-                mealCount: mealsData.length,
-                summary: `Logged ${mealsData.length} meals with total estimated ${totalCalories} calories`,
-                timestamp: new Date().toISOString(),
-            }
-
-            return report
-        },
-    },
-    "daily-posture-check-reminder": {
-        handle: async (job, supabaseClient) => {
-            const { userId } = job.payload as {
-                userId: string
-            }
-
-            // Create notification in database
-            const { error } = await supabaseClient.from("health_alerts").insert({
-                user_id: userId,
-                title: "Daily Posture Check",
-                description: "Time for your daily posture assessment",
-                type: "reminder",
-                priority: "medium",
-                read: false,
-            })
-
-            if (error) throw error
-
-            return {
-                notificationCreated: true,
-            }
-        },
-    },
     "weekly-summary": {
         handle: async (job, supabaseClient) => {
             const { userId } = job.payload as {
@@ -102,25 +32,15 @@ const jobHandlers: Record<
                 Date.now() - 7 * 24 * 60 * 60 * 1000
             ).toISOString()
 
-            // Get all meal logs from past week
-            const { data: meals } = await supabaseClient
-                .from("image_analysis_results")
-                .select("result")
+            // Get all food safety scans from past week
+            const { data: scans } = await supabaseClient
+                .from("food_safety_scans")
+                .select("*")
                 .eq("user_id", userId)
-                .eq("analysis_type", "meal")
-                .gte("created_at", weekAgo)
-
-            // Get all posture checks from past week
-            const { data: postureChecks } = await supabaseClient
-                .from("image_analysis_results")
-                .select("result")
-                .eq("user_id", userId)
-                .eq("analysis_type", "posture")
                 .gte("created_at", weekAgo)
 
             const summary = {
-                mealsLogged: meals?.length || 0,
-                postureChecks: postureChecks?.length || 0,
+                foodSafetyScans: scans?.length || 0,
                 period: "weekly",
                 weekStart: weekAgo,
             }

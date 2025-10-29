@@ -30,22 +30,10 @@ const trackSections = [
     route: "/(tabs)/track/kick-counter",
   },
   {
-    title: "Nutrition Coach",
-    subtitle: "Stay on top of meals and hydration",
-    icon: "coffee",
-    route: "/(tabs)/track/nutrition-coach",
-  },
-  {
     title: "Goals",
     subtitle: "Celebrate weekly wins",
     icon: "award",
     route: "/(tabs)/track/goals",
-  },
-  {
-    title: "Alerts",
-    subtitle: "Important reminders and notices",
-    icon: "bell",
-    route: "/(tabs)/track/alerts",
   },
 ];
 

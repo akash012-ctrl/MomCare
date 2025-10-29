@@ -136,7 +136,7 @@ export interface FileUploadRequest {
     userId: string;
     fileName: string;
     fileBase64: string;
-    analysisType: 'meal' | 'general' | 'ultrasound';
+    analysisType: 'food_safety' | 'general' | 'ultrasound';
     bucket?: string;
 }
 
@@ -166,20 +166,6 @@ export interface ChatAttachmentUploadResponse {
     summary?: string | null;
     keyFindings?: string[];
     metadata?: Record<string, unknown>;
-}
-
-export interface ImageAnalysisResult {
-    id: string;
-    user_id: string;
-    image_url: string;
-    storage_path: string;
-    analysis_type: string;
-    result: Record<string, unknown>;
-    confidence: number;
-    model_used: string;
-    tokens_used?: number;
-    processing_time_ms?: number;
-    created_at: string;
 }
 
 // ============================================================================
@@ -564,8 +550,7 @@ interface UploadAndAnalyzeImageParams {
     fileName: string;
     fileBase64: string;
     mimeType: string;
-    analysisType: 'meal' | 'general' | 'ultrasound';
-    mealType?: string;
+    analysisType: 'food_safety' | 'general' | 'ultrasound';
     bucket?: string;
 }
 
@@ -575,8 +560,7 @@ export async function uploadAndAnalyzeImage({
     fileBase64,
     mimeType,
     analysisType,
-    mealType,
-    bucket = 'meal-images'
+    bucket = 'user-uploads'
 }: UploadAndAnalyzeImageParams): Promise<FileUploadResponse> {
     try {
         const { data, error } = await supabase.functions.invoke('file-upload?action=upload', {
@@ -585,7 +569,6 @@ export async function uploadAndAnalyzeImage({
                 fileName,
                 fileBase64,
                 mimeType,
-                mealType,
                 analysisType,
                 bucket,
             },
@@ -609,34 +592,6 @@ export async function uploadChatAttachment(params: UploadChatAttachmentParams): 
         return data as ChatAttachmentUploadResponse;
     } catch (error) {
         console.error('Upload chat attachment error:', error);
-        throw error;
-    }
-}
-
-/**
- * Get image analysis results
- * @param userId User ID
- * @param analysisType Optional filter by analysis type
- * @returns Array of analysis results
- */
-export async function getImageAnalysisResults(
-    userId: string,
-    analysisType?: string
-): Promise<ImageAnalysisResult[]> {
-    try {
-        const { data, error } = await supabase.functions.invoke('file-upload', {
-            body: {
-                userId,
-                analysisType,
-                action: 'get-results',
-            },
-            method: 'GET',
-        });
-
-        if (error) throw error;
-        return data.results as ImageAnalysisResult[];
-    } catch (error) {
-        console.error('Get image analysis results error:', error);
         throw error;
     }
 }

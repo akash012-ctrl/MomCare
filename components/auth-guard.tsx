@@ -36,12 +36,14 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
     // Redirect unauthenticated users to login
     if (!user && inAuthGroup) {
+      console.log("AuthGuard: Redirecting unauthenticated user to login");
       router.replace("/login");
       return;
     }
 
     // Redirect authenticated users away from public routes
     if (user && inPublicRoutes) {
+      console.log("AuthGuard: Redirecting authenticated user to tabs");
       router.replace("/(tabs)");
       return;
     }

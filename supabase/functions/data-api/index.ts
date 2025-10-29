@@ -69,43 +69,6 @@ async function handleKicks(
     }
 }
 
-async function handleNutrition(
-    supabase: ReturnType<typeof createClient>,
-    userId: string,
-    method: string,
-    body: any,
-    dateFilter?: string
-) {
-    if (method === "GET") {
-        let query = supabase
-            .from("nutrition_logs")
-            .select("*")
-            .eq("user_id", userId);
-
-        if (dateFilter) {
-            query = query.gte("logged_at", dateFilter);
-        }
-
-        const { data, error } = await query.order("logged_at", {
-            ascending: false,
-        });
-        if (error) throw error;
-        return data;
-    } else if (method === "POST") {
-        const { data, error } = await supabase
-            .from("nutrition_logs")
-            .insert({
-                user_id: userId,
-                logged_at: body.logged_at || new Date().toISOString(),
-                ...body,
-            })
-            .select()
-            .single();
-        if (error) throw error;
-        return data;
-    }
-}
-
 async function handleGoals(
     supabase: ReturnType<typeof createClient>,
     userId: string,
@@ -139,48 +102,6 @@ async function handleGoals(
             .from("goals")
             .update(updateData)
             .eq("id", goalId)
-            .eq("user_id", userId)
-            .select()
-            .single();
-        if (error) throw error;
-        return data;
-    }
-}
-
-async function handleAlerts(
-    supabase: ReturnType<typeof createClient>,
-    userId: string,
-    method: string,
-    body: any
-) {
-    if (method === "GET") {
-        const { data, error } = await supabase
-            .from("health_alerts")
-            .select("*")
-            .eq("user_id", userId)
-            .order("created_at", { ascending: false });
-        if (error) throw error;
-        return data;
-    } else if (method === "POST") {
-        const { data, error } = await supabase
-            .from("health_alerts")
-            .insert({
-                user_id: userId,
-                priority: "medium",
-                is_read: false,
-                is_dismissed: false,
-                ...body,
-            })
-            .select()
-            .single();
-        if (error) throw error;
-        return data;
-    } else if (method === "PUT") {
-        const { alertId, ...updateData } = body;
-        const { data, error } = await supabase
-            .from("health_alerts")
-            .update(updateData)
-            .eq("id", alertId)
             .eq("user_id", userId)
             .select()
             .single();
@@ -259,21 +180,8 @@ Deno.serve(async (req) => {
             case "kicks":
                 result = await handleKicks(supabase, userId, method, body);
                 break;
-            case "nutrition":
-                const dateFilter = url.searchParams.get("date");
-                result = await handleNutrition(
-                    supabase,
-                    userId,
-                    method,
-                    body,
-                    dateFilter || undefined
-                );
-                break;
             case "goals":
                 result = await handleGoals(supabase, userId, method, body);
-                break;
-            case "alerts":
-                result = await handleAlerts(supabase, userId, method, body);
                 break;
             case "profile":
                 result = await handleProfile(supabase, userId, method, body);

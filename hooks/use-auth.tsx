@@ -297,6 +297,9 @@ function AuthProviderComponent({ children }: { children: React.ReactNode }) {
       // Clear all cached login data
       await clearCachedUserSession();
       await AsyncStorage.removeItem("auth");
+
+      // Navigation will be handled by the calling component
+      // This allows the component to use router.replace("/login")
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : "Sign out failed";

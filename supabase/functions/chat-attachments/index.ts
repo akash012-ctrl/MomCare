@@ -72,7 +72,7 @@ async function uploadToStorage(
     storagePath: string,
     bytes: Uint8Array,
     mimeType: string
-): Promise<string> {
+): Promise<{ signedUrl: string; publicUrl: string }> {
     const { error } = await supabase.storage
         .from(ATTACHMENT_BUCKET)
         .upload(storagePath, bytes, {
@@ -85,8 +85,22 @@ async function uploadToStorage(
         throw error;
     }
 
-    const { data } = supabase.storage.from(ATTACHMENT_BUCKET).getPublicUrl(storagePath);
-    return data.publicUrl;
+    // Create signed URL for OpenAI access (1 hour validity)
+    const { data: signedData, error: signedError } = await supabase.storage
+        .from(ATTACHMENT_BUCKET)
+        .createSignedUrl(storagePath, 3600);
+
+    if (signedError) {
+        throw signedError;
+    }
+
+    // Get public URL for storage reference
+    const { data: publicData } = supabase.storage.from(ATTACHMENT_BUCKET).getPublicUrl(storagePath);
+
+    return {
+        signedUrl: signedData.signedUrl,
+        publicUrl: publicData.publicUrl,
+    };
 }
 
 async function summarizeImage(
@@ -361,7 +375,7 @@ Deno.serve(async (req: Request) => {
         const safeName = sanitizeFileName(fileName);
         const storagePath = `${userId}/${Date.now()}-${safeName}`;
         const fileBytes = decodeBase64ToBytes(fileBase64);
-        const fileUrl = await uploadToStorage(supabase, storagePath, fileBytes, mimeType);
+        const { signedUrl, publicUrl } = await uploadToStorage(supabase, storagePath, fileBytes, mimeType);
 
         let analysis: Record<string, unknown>;
         const metadata: Record<string, unknown> = {
@@ -369,7 +383,8 @@ Deno.serve(async (req: Request) => {
         };
 
         if (mimeType.startsWith("image/")) {
-            analysis = await summarizeImage(fileUrl, mimeType, openaiApiKey);
+            // Use signed URL for OpenAI analysis
+            analysis = await summarizeImage(signedUrl, mimeType, openaiApiKey);
             metadata.analysis_source = "image";
         } else if (mimeType === "application/pdf") {
             analysis = await summarizePdf(fileBytes, safeName, mimeType, openaiApiKey);
@@ -387,7 +402,7 @@ Deno.serve(async (req: Request) => {
                 user_id: userId,
                 conversation_id: conversationId ?? null,
                 storage_path: storagePath,
-                file_url: fileUrl,
+                file_url: publicUrl, // Store public URL for user access
                 mime_type: mimeType,
                 title: typeof analysis.title === "string" ? analysis.title : null,
                 summary: typeof analysis.summary === "string" ? analysis.summary : null,
@@ -415,7 +430,7 @@ Deno.serve(async (req: Request) => {
         const responsePayload: AttachmentResponse = {
             success: true,
             documentId: documentRecord.id,
-            fileUrl,
+            fileUrl: publicUrl,
             title: documentRecord.title,
             summary: documentRecord.summary,
             keyFindings: (documentRecord.metadata?.key_findings as string[] | undefined) ?? [],

@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { FoodSafetyScanner } from "@/components/ui/food-safety-scanner";
 import { getPregnancyWeekInfo, type WeeklyPregnancyInfo } from "@/constants/pregnancy-weeks-data";
 import { MotherhoodTheme } from "@/constants/theme";
 import { useAuth } from "@/hooks/use-auth";
@@ -39,10 +40,6 @@ const translations = {
     yourBodyChanges: 'Your Body Changes',
     commonSymptoms: 'Common Symptoms',
     tipsAdvice: 'Tips & Advice',
-    mealAnalysis: 'Meal Analysis',
-    calories: 'calories',
-    meals: 'meals',
-    nutritionInsights: 'Nutrition Insights',
   },
   hi: {
     hello: 'नमस्ते',
@@ -55,10 +52,6 @@ const translations = {
     yourBodyChanges: 'आपके शरीर में बदलाव',
     commonSymptoms: 'सामान्य लक्षण',
     tipsAdvice: 'सुझाव और सलाह',
-    mealAnalysis: 'भोजन विश्लेषण',
-    calories: 'कैलोरी',
-    meals: 'भोजन',
-    nutritionInsights: 'पोषण जानकारी',
   },
 };
 
@@ -78,17 +71,12 @@ export default function HomeDashboard() {
     null
   );
   const [tips, setTips] = useState<string[]>([]);
-  const [recentMealAnalysis, setRecentMealAnalysis] = useState<{
-    totalCalories: number;
-    mealCount: number;
-  } | null>(null);
-
-  const [nutritionInsights, setNutritionInsights] = useState<string[]>([]);
   const [pregnancyStartDate, setPregnancyStartDate] = useState<string | null>(
     null
   );
   const [featureCards, setFeatureCards] = useState<FeatureCard[]>([]);
   const [weeklyInfo, setWeeklyInfo] = useState<WeeklyPregnancyInfo | null>(null);
+  const [showFoodScanner, setShowFoodScanner] = useState(false);
 
   // Load feature cards from Supabase
   const loadFeatureCards = useCallback(async () => {
@@ -133,6 +121,13 @@ export default function HomeDashboard() {
           route: "/(tabs)/track/goals",
           order: 4,
         },
+        {
+          id: "5",
+          title: "Scan Food",
+          icon: "camera",
+          route: "food-safety-scan",
+          order: 5,
+        },
       ]);
     }
   }, []);
@@ -166,52 +161,6 @@ export default function HomeDashboard() {
           setTips(weeklyTips);
         }
       }
-
-      // Load recent meal analysis
-      const { data: mealAnalyses } = await supabase
-        .from("image_analysis_results")
-        .select("result")
-        .eq("user_id", user.id)
-        .eq("analysis_type", "meal")
-        .order("created_at", { ascending: false })
-        .limit(5);
-
-      if (mealAnalyses && mealAnalyses.length > 0) {
-        let totalCalories = 0;
-        mealAnalyses.forEach((item) => {
-          const result = item.result as Record<string, unknown>;
-          if (
-            result?.totalCalories &&
-            typeof result.totalCalories === "number"
-          ) {
-            totalCalories += result.totalCalories;
-          }
-        });
-        setRecentMealAnalysis({
-          totalCalories: Math.round(totalCalories),
-          mealCount: mealAnalyses.length,
-        });
-
-        // Generate nutrition insights
-        const avgCaloriesPerMeal = Math.round(
-          totalCalories / mealAnalyses.length
-        );
-        const insights = [];
-        if (avgCaloriesPerMeal > 2200) {
-          insights.push("✨ Great nutrition intake for pregnancy!");
-        } else if (avgCaloriesPerMeal < 1800) {
-          insights.push(
-            "📌 Consider increasing calorie intake by 300-500 kcal"
-          );
-        }
-        if (mealAnalyses.length >= 3) {
-          insights.push(
-            `🎯 You've logged ${mealAnalyses.length} meals recently`
-          );
-        }
-        setNutritionInsights(insights);
-      }
-
 
     } catch (error) {
       console.error("Error loading pregnancy data:", error);
@@ -322,7 +271,11 @@ export default function HomeDashboard() {
                 style={styles.compactFeatureCard}
                 onPress={async () => {
                   await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  router.push(card.route as never);
+                  if (card.route === "food-safety-scan") {
+                    setShowFoodScanner(true);
+                  } else {
+                    router.push(card.route as never);
+                  }
                 }}
               >
                 {({ pressed }) => (
@@ -440,69 +393,16 @@ export default function HomeDashboard() {
             </View>
           </MotiView>
         )}
-
-        {/* Analysis Widgets */}
-        {recentMealAnalysis && (
-          <View style={styles.widgetsWrapper}>
-            <Text style={styles.sectionHeading}>Your Health Insights</Text>
-
-            {/* Meal Analysis Widget */}
-            {recentMealAnalysis && (
-              <MotiView
-                from={{ opacity: 0, translateY: 20 }}
-                animate={{ opacity: 1, translateY: 0 }}
-                transition={{ delay: 400, type: "timing", duration: 500 }}
-                style={styles.widgetCard}
-              >
-                <Pressable
-                  style={styles.widgetContent}
-                  onPress={() =>
-                    router.push("/(tabs)/track/meal-logging" as any)
-                  }
-                >
-                  <View style={styles.widgetHeader}>
-                    <Text style={styles.widgetEmoji}>🍽️</Text>
-                    <View style={styles.widgetTitleGroup}>
-                      <Text style={styles.widgetTitle}>Recent Meals</Text>
-                      <Text style={styles.widgetSubtitle}>
-                        {recentMealAnalysis.mealCount} meals logged
-                      </Text>
-                    </View>
-                  </View>
-                  <View style={styles.widgetStats}>
-                    <View style={styles.statItem}>
-                      <Text style={styles.statLabel}>Total Calories</Text>
-                      <Text style={styles.statValue}>
-                        {recentMealAnalysis.totalCalories}
-                      </Text>
-                    </View>
-                  </View>
-                </Pressable>
-              </MotiView>
-            )}
-
-            {/* Nutrition Insights */}
-            {nutritionInsights.length > 0 && (
-              <MotiView
-                from={{ opacity: 0, translateY: 20 }}
-                animate={{ opacity: 1, translateY: 0 }}
-                transition={{ delay: 500, type: "timing", duration: 500 }}
-                style={styles.insightCard}
-              >
-                <View style={styles.insightHeader}>
-                  <Text style={styles.insightEmoji}>💡</Text>
-                  <Text style={styles.insightTitle}>AI Suggestions</Text>
-                </View>
-                {nutritionInsights.map((insight, index) => (
-                  <Text key={index} style={styles.insightText}>
-                    {insight}
-                  </Text>
-                ))}
-              </MotiView>
-            )}
-          </View>
-        )}
       </ScrollView>
+
+      {/* Food Safety Scanner Modal */}
+      <FoodSafetyScanner
+        visible={showFoodScanner}
+        onClose={() => setShowFoodScanner(false)}
+        onScanComplete={(result) => {
+          console.log("Food scan complete:", result);
+        }}
+      />
     </SafeAreaView>
   );
 }

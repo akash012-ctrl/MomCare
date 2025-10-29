@@ -16,13 +16,10 @@ interface UploadRequest {
     userId: string;
     fileName: string;
     fileBase64: string;
-    analysisType: "meal" | "general" | "ultrasound";
+    analysisType: "food_safety" | "general" | "ultrasound";
     bucket?: string;
     mimeType?: string;
-    mealType?: string;
 }
-
-const DEFAULT_MEAL_TYPE = "unspecified";
 
 function sanitizeFileName(fileName: string): string {
     return fileName.replace(/[^a-zA-Z0-9_.-]/g, "_");
@@ -45,7 +42,7 @@ async function uploadFileToStorage(
     fileBase64: string,
     mimeType: string | undefined,
     bucket: string
-): Promise<string> {
+): Promise<{ signedUrl: string; publicUrl: string }> {
     const binaryString = atob(fileBase64);
     const bytes = new Uint8Array(binaryString.length);
     for (let i = 0; i < binaryString.length; i++) {
@@ -63,8 +60,20 @@ async function uploadFileToStorage(
 
     if (uploadError) throw uploadError;
 
-    const { data } = supabase.storage.from(bucket).getPublicUrl(storagePath);
-    return data.publicUrl;
+    // Create signed URL for OpenAI access (1 hour validity)
+    const { data: signedData, error: signedError } = await supabase.storage
+        .from(bucket)
+        .createSignedUrl(storagePath, 3600); // 3600 seconds = 1 hour
+
+    if (signedError) throw signedError;
+
+    // Get public URL for storage reference
+    const { data: publicData } = supabase.storage.from(bucket).getPublicUrl(storagePath);
+
+    return {
+        signedUrl: signedData.signedUrl,
+        publicUrl: publicData.publicUrl
+    };
 }
 
 async function analyzeImage(
@@ -75,7 +84,7 @@ async function analyzeImage(
     if (!openaiApiKey) throw new Error("OPENAI_API_KEY not configured");
 
     const prompts: Record<string, string> = {
-        meal: `Analyze this meal image and provide in JSON:\n{\n  "foods": [{"name": string, "confidence": 0-1}],\n  "calories": number,\n  "macros": {"protein": number, "carbs": number, "fat": number},\n  "micros": {"iron": number, "calcium": number, "folate": number},\n  "summary": string\n}`,
+        food_safety: `Analyze this food image for pregnancy safety and provide in JSON:\n{\n  "food_name": string,\n  "safety_level": "safe"|"caution"|"avoid",\n  "reasons": [string],\n  "nutrients": [string],\n  "alternatives": [string],\n  "confidence": 0-1\n}`,
 
         general: `Analyze and provide in JSON:\n{\n  "description": string,\n  "objects": [string],\n  "suggestions": [string]\n}`,
         ultrasound: `Analyze ultrasound and provide in JSON:\n{\n  "week": number|null,\n  "weight": number|null,\n  "movement": boolean,\n  "anomalies": [string],\n  "recommendations": [string]\n}`,
@@ -138,98 +147,6 @@ async function analyzeImage(
     return { analysis, tokensUsed: tokens };
 }
 
-async function storeAnalysisResult(
-    supabase: ReturnType<typeof createClient>,
-    userId: string,
-    imageUrl: string,
-    storagePath: string,
-    analysisType: string,
-    result: Record<string, any>,
-    confidence: number,
-    tokensUsed: number
-): Promise<string> {
-    const { data, error } = await supabase
-        .from("image_analysis_results")
-        .insert({
-            user_id: userId,
-            image_url: imageUrl,
-            storage_path: storagePath,
-            analysis_type: analysisType,
-            result,
-            confidence,
-            model_used: "gpt-4o-mini",
-            tokens_used: tokensUsed,
-            processing_time_ms: 0,
-        })
-        .select("id")
-        .single();
-
-    if (error) throw error;
-    return data.id;
-}
-
-function averageFoodConfidence(foods: unknown): number | null {
-    if (!Array.isArray(foods) || foods.length === 0) {
-        return null;
-    }
-    const total = foods.reduce((sum, item) => {
-        const record = (item ?? {}) as Record<string, unknown>;
-        const confidence = numericOrNull(record.confidence);
-        return sum + (confidence ?? 0);
-    }, 0);
-    return total > 0 ? total / foods.length : null;
-}
-
-function buildMealNutritionPayload(params: {
-    analysis: Record<string, any>;
-    userId: string;
-    analysisId: string;
-    imageUrl: string;
-    storagePath: string;
-    tokensUsed: number;
-    modelUsed: string;
-    mealTypeOverride?: string;
-}) {
-    const { analysis, userId, analysisId, imageUrl, storagePath, tokensUsed, modelUsed, mealTypeOverride } = params;
-    const foods = Array.isArray(analysis?.foods) ? analysis.foods : [];
-    const macros = analysis?.macros ?? {};
-    const micros = analysis?.micros ?? {};
-    const mealType = mealTypeOverride && mealTypeOverride.trim().length > 0 ? mealTypeOverride : analysis?.meal_type ?? DEFAULT_MEAL_TYPE;
-
-    const calories = numericOrNull(analysis?.calories);
-    const protein = numericOrNull(macros?.protein);
-    const carbs = numericOrNull(macros?.carbs);
-    const fat = numericOrNull(macros?.fat);
-    const iron = numericOrNull(micros?.iron);
-    const calcium = numericOrNull(micros?.calcium);
-    const folate = numericOrNull(micros?.folic_acid) ?? numericOrNull(micros?.folate);
-    const water = numericOrNull(analysis?.water_ml) ?? 0;
-
-    return {
-        user_id: userId,
-        meal_type: mealType,
-        food_items: foods,
-        calories,
-        protein_g: protein,
-        carbs_g: carbs,
-        fat_g: fat,
-        iron_mg: iron,
-        calcium_mg: calcium,
-        folic_acid_mcg: folate,
-        water_intake_ml: water,
-        notes: typeof analysis?.summary === "string" ? analysis.summary : null,
-        image_url: imageUrl,
-        storage_path: storagePath,
-        analysis_id: analysisId,
-        analysis_source: "ai_image",
-        analysis_confidence: averageFoodConfidence(foods),
-        model_used: modelUsed,
-        tokens_used: numericOrNull(tokensUsed),
-        raw_analysis: analysis ?? {},
-        logged_at: new Date().toISOString(),
-    };
-}
-
 Deno.serve(async (req) => {
     if (req.method === "OPTIONS") {
         return new Response("ok", {
@@ -256,9 +173,8 @@ Deno.serve(async (req) => {
                 fileName,
                 fileBase64,
                 mimeType,
-                mealType,
                 analysisType,
-                bucket = "meal-images",
+                bucket = "user-uploads",
             } = body;
 
             if (!userId || !fileName || !fileBase64) {
@@ -275,7 +191,7 @@ Deno.serve(async (req) => {
 
             const safeFileName = sanitizeFileName(fileName);
             const storagePath = `${userId}/${Date.now()}-${safeFileName}`;
-            const imageUrl = await uploadFileToStorage(
+            const { signedUrl, publicUrl } = await uploadFileToStorage(
                 supabase,
                 storagePath,
                 fileBase64,
@@ -283,97 +199,56 @@ Deno.serve(async (req) => {
                 bucket
             );
 
+            // Use signed URL for OpenAI analysis (1 hour access)
             const { analysis, tokensUsed } = await analyzeImage(
-                imageUrl,
+                signedUrl,
                 analysisType
             );
 
-            const resultId = await storeAnalysisResult(
-                supabase,
-                userId,
-                imageUrl,
-                storagePath,
-                analysisType,
-                analysis,
-                0.95,
-                tokensUsed
-            );
-
-            let nutritionLogId: string | null = null;
-            if (analysisType === "meal") {
-                const nutritionPayload = buildMealNutritionPayload({
-                    analysis,
-                    userId,
-                    analysisId: resultId,
-                    imageUrl,
-                    storagePath,
-                    tokensUsed,
-                    modelUsed: "gpt-4o-mini",
-                    mealTypeOverride: mealType,
-                });
-
-                const { data: nutritionLog, error: nutritionError } = await supabase
-                    .from("nutrition_logs")
-                    .insert(nutritionPayload)
+            // For food safety scans, store in food_safety_scans table
+            if (analysisType === "food_safety") {
+                const { data: scanData, error: scanError } = await supabase
+                    .from("food_safety_scans")
+                    .insert({
+                        user_id: userId,
+                        image_url: publicUrl,
+                        storage_path: storagePath,
+                        food_name: analysis?.food_name || "Unknown",
+                        safety_level: analysis?.safety_level || "unknown",
+                        reasons: analysis?.reasons || [],
+                        nutrients: analysis?.nutrients || [],
+                        alternatives: analysis?.alternatives || [],
+                        confidence: analysis?.confidence || 0.0,
+                        raw_analysis: analysis,
+                    })
                     .select("id")
                     .single();
 
-                if (nutritionError) {
-                    throw nutritionError;
-                }
+                if (scanError) throw scanError;
 
-                nutritionLogId = nutritionLog.id;
-            }
-
-            return new Response(
-                JSON.stringify({
-                    success: true,
-                    resultId,
-                    imageUrl,
-                    analysis,
-                    tokensUsed,
-                    nutritionLogId,
-                    timestamp: new Date().toISOString(),
-                }),
-                {
-                    headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-                }
-            );
-        } else if (action === "get-results") {
-            const userId = url.searchParams.get("userId");
-            const analysisType = url.searchParams.get("analysisType");
-
-            if (!userId) {
                 return new Response(
                     JSON.stringify({
-                        error: "User ID is required",
+                        success: true,
+                        scanId: scanData.id,
+                        imageUrl: publicUrl,
+                        analysis,
+                        tokensUsed,
+                        timestamp: new Date().toISOString(),
                     }),
                     {
-                        status: 400,
                         headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
                     }
                 );
             }
 
-            let query = supabase
-                .from("image_analysis_results")
-                .select("*")
-                .eq("user_id", userId);
-
-            if (analysisType) {
-                query = query.eq("analysis_type", analysisType);
-            }
-
-            const { data, error } = await query.order("created_at", {
-                ascending: false,
-            });
-
-            if (error) throw error;
-
+            // For other analysis types, return analysis without storing
             return new Response(
                 JSON.stringify({
                     success: true,
-                    results: data,
+                    imageUrl: publicUrl,
+                    analysis,
+                    tokensUsed,
+                    timestamp: new Date().toISOString(),
                 }),
                 {
                     headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
@@ -382,7 +257,7 @@ Deno.serve(async (req) => {
         } else {
             return new Response(
                 JSON.stringify({
-                    error: "Invalid action. Use ?action=upload or ?action=get-results",
+                    error: "Invalid action. Use ?action=upload",
                 }),
                 {
                     status: 400,

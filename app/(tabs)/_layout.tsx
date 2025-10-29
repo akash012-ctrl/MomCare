@@ -24,7 +24,7 @@ export default function TabLayout() {
           .from("user_profiles")
           .select("pregnancy_start_date")
           .eq("id", user.id)
-          .single();
+          .maybeSingle(); // Use maybeSingle instead of single to handle missing records gracefully
 
         if (error && error.code !== "PGRST116") {
           console.error("Error checking pregnancy date:", error);
@@ -37,6 +37,7 @@ export default function TabLayout() {
         setShowDateModal(!data?.pregnancy_start_date);
       } catch (err) {
         console.error("Error in checkPregnancyDate:", err);
+        setShowDateModal(false); // Don't block on error
       } finally {
         setIsCheckingDate(false);
       }

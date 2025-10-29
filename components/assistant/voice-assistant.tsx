@@ -21,7 +21,6 @@ import { useRealtimeVoice } from "@/hooks/use-realtime-voice";
 import { getSupabase } from "@/lib/supabase";
 import {
     getProfile,
-    type NutritionLog,
     type SymptomLog,
     type UserProfile,
 } from "@/lib/supabase-api";
@@ -69,7 +68,6 @@ interface ContextSummaryRow {
 interface VoiceContextState {
     profile: UserProfile | null;
     todayMood: SymptomLog | null;
-    todayMeals: NutritionLog[];
     contextLoading: boolean;
     contextError: string | null;
 }
@@ -77,9 +75,6 @@ interface VoiceContextState {
 interface VoiceDerivedData {
     displayName: string;
     moodSummary: string | null;
-    mealSummaries: string[];
-    totalCalories: number;
-    mealInstructionSummary: string;
     todayLabel: string;
     dueDateLabel: string | null;
     pregnancyStartLabel: string | null;
@@ -174,53 +169,6 @@ function buildMoodSummary(mood: SymptomLog | null, language: Language): string |
         : `${descriptor} mood recorded${timeSuffix}.`;
 }
 
-function buildMealSummaries(meals: NutritionLog[], language: Language): string[] {
-    if (!meals.length) {
-        return [];
-    }
-
-    return meals.slice(0, 3).map((meal) => {
-        const descriptor = meal.meal_type ? titleCase(meal.meal_type) : language === "hi" ? "भोजन" : "Meal";
-        const time = formatTimeLabel(meal.logged_at, language);
-        const calories = typeof meal.calories === "number"
-            ? `${Math.round(meal.calories)} kcal`
-            : language === "hi"
-                ? "कैलोरी उपलब्ध नहीं"
-                : "Calories not logged";
-        const note = typeof meal.notes === "string" ? meal.notes.trim() : "";
-
-        const headline = time ? `${descriptor} · ${time}` : descriptor;
-        const detailParts = [calories];
-        if (note) {
-            detailParts.push(note);
-        }
-
-        return `${headline}: ${detailParts.join(" — ")}`;
-    });
-}
-
-function sumMealCalories(meals: NutritionLog[]): number {
-    return meals.reduce((total, meal) => total + (meal.calories ?? 0), 0);
-}
-
-function buildMealInstructionSummary(meals: NutritionLog[], language: Language): string {
-    if (!meals.length) {
-        return "";
-    }
-
-    const descriptors = meals.slice(0, 3).map((meal) => {
-        const label = meal.meal_type ? titleCase(meal.meal_type) : language === "hi" ? "भोजन" : "Meal";
-        const calories = typeof meal.calories === "number"
-            ? `${Math.round(meal.calories)} kcal`
-            : language === "hi"
-                ? "कैलोरी नहीं"
-                : "kcal unknown";
-        return `${label} ${calories}`;
-    });
-
-    return descriptors.join(", ");
-}
-
 function createPregnancyRows(
     profile: UserProfile | null,
     language: Language,
@@ -278,44 +226,9 @@ function createMoodRows(moodSummary: string | null, language: Language): Context
     ];
 }
 
-function createNutritionRows(
-    mealSummaries: string[],
-    totalCalories: number,
-    language: Language,
-): ContextSummaryRow[] {
-    if (!mealSummaries.length) {
-        return [];
-    }
-
-    const entries: ContextSummaryRow[] = [
-        {
-            id: "meals",
-            label: language === "hi" ? "भोजन लॉग" : "Meals logged",
-            value: mealSummaries.join("\n"),
-        },
-    ];
-
-    const roundedCalories = Math.round(totalCalories);
-    const calorieValue = roundedCalories > 0
-        ? `${roundedCalories} kcal`
-        : language === "hi"
-            ? "कैलोरी उपलब्ध नहीं"
-            : "Calories not logged";
-
-    entries.push({
-        id: "calories",
-        label: language === "hi" ? "अनुमानित कैलोरी" : "Estimated calories",
-        value: calorieValue,
-    });
-
-    return entries;
-}
-
 function buildContextSummaryRows(params: {
     profile: UserProfile | null;
     moodSummary: string | null;
-    mealSummaries: string[];
-    totalCalories: number;
     language: Language;
     dueDateLabel: string | null;
     pregnancyStartLabel: string | null;
@@ -323,8 +236,6 @@ function buildContextSummaryRows(params: {
     const {
         profile,
         moodSummary,
-        mealSummaries,
-        totalCalories,
         language,
         dueDateLabel,
         pregnancyStartLabel,
@@ -333,7 +244,6 @@ function buildContextSummaryRows(params: {
     return [
         ...createPregnancyRows(profile, language, dueDateLabel, pregnancyStartLabel),
         ...createMoodRows(moodSummary, language),
-        ...createNutritionRows(mealSummaries, totalCalories, language),
     ];
 }
 
@@ -405,35 +315,6 @@ function getMoodInstructionLines(moodSummary: string | null, language: Language)
     ];
 }
 
-function getMealInstructionLines(params: {
-    mealInstructionSummary: string;
-    totalCalories: number;
-    language: Language;
-}): string[] {
-    const { mealInstructionSummary, totalCalories, language } = params;
-
-    if (!mealInstructionSummary) {
-        return [
-            language === "hi"
-                ? "आज भोजन लॉग नहीं है; पोषण पर कोमलता से प्रेरित करें।"
-                : "No meals logged today; encourage gentle, attainable nutrition tips.",
-        ];
-    }
-
-    const roundedCalories = Math.round(totalCalories);
-    const caloriePhrase = roundedCalories > 0
-        ? `${roundedCalories} kcal`
-        : language === "hi"
-            ? "कैलोरी दर्ज नहीं"
-            : "calories not logged";
-
-    return [
-        language === "hi"
-            ? `आज दर्ज भोजन: ${mealInstructionSummary}. कुल अनुमानित कैलोरी ${caloriePhrase} है।`
-            : `Meals logged today: ${mealInstructionSummary}. Estimated calories ${caloriePhrase}.`,
-    ];
-}
-
 function getAssistantGuidanceLines(language: Language): string[] {
     return [
         language === "hi"
@@ -456,8 +337,6 @@ function buildSessionInstructions(params: {
     dueDateLabel: string | null;
     pregnancyStartLabel: string | null;
     moodSummary: string | null;
-    mealInstructionSummary: string;
-    totalCalories: number;
     userId: string | null | undefined;
 }): string {
     const {
@@ -468,8 +347,6 @@ function buildSessionInstructions(params: {
         dueDateLabel,
         pregnancyStartLabel,
         moodSummary,
-        mealInstructionSummary,
-        totalCalories,
         userId,
     } = params;
 
@@ -477,7 +354,6 @@ function buildSessionInstructions(params: {
         ...getBaseInstructionLines(language, displayName, todayLabel),
         ...getPregnancyInstructionLines({ profile, language, dueDateLabel, pregnancyStartLabel }),
         ...getMoodInstructionLines(moodSummary, language),
-        ...getMealInstructionLines({ mealInstructionSummary, totalCalories, language }),
         ...getAssistantGuidanceLines(language),
     ];
 
@@ -502,7 +378,6 @@ async function fetchVoiceContextData(
     const result: VoiceContextState = {
         profile: null,
         todayMood: null,
-        todayMeals: [],
         contextLoading: false,
         contextError: null,
     };
@@ -536,33 +411,12 @@ async function fetchVoiceContextData(
         }
     }
 
-    try {
-        const { data, error } = await supabaseClient
-            .from("nutrition_logs")
-            .select("id,meal_type,calories,notes,logged_at")
-            .eq("user_id", userId)
-            .gte("logged_at", bounds.start)
-            .lt("logged_at", bounds.end)
-            .order("logged_at", { ascending: true });
-
-        if (error) throw error;
-        result.todayMeals = (data ?? []) as NutritionLog[];
-    } catch (mealError) {
-        console.warn("Voice assistant meals fetch failed", mealError);
-        if (!result.contextError) {
-            result.contextError = language === "hi"
-                ? "आज के भोजन डेटा में समस्या है।"
-                : "Unable to load meal logs for today.";
-        }
-    }
-
     return result;
 }
 
 function useVoiceContextState(user: User | null, language: Language): VoiceContextState {
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [todayMood, setTodayMood] = useState<SymptomLog | null>(null);
-    const [todayMeals, setTodayMeals] = useState<NutritionLog[]>([]);
     const [contextLoading, setContextLoading] = useState(false);
     const [contextError, setContextError] = useState<string | null>(null);
 
@@ -572,7 +426,6 @@ function useVoiceContextState(user: User | null, language: Language): VoiceConte
         if (!user?.id) {
             setProfile(null);
             setTodayMood(null);
-            setTodayMeals([]);
             setContextError(null);
             setContextLoading(false);
             return () => {
@@ -594,7 +447,6 @@ function useVoiceContextState(user: User | null, language: Language): VoiceConte
 
             setProfile(contextResult.profile);
             setTodayMood(contextResult.todayMood);
-            setTodayMeals(contextResult.todayMeals);
             setContextError(contextResult.contextError);
             setContextLoading(false);
         };
@@ -609,7 +461,6 @@ function useVoiceContextState(user: User | null, language: Language): VoiceConte
     return {
         profile,
         todayMood,
-        todayMeals,
         contextLoading,
         contextError,
     };
@@ -637,21 +488,6 @@ function useVoiceDerivedData(
         [context.todayMood, language],
     );
 
-    const mealSummaries = useMemo(
-        () => buildMealSummaries(context.todayMeals, language),
-        [context.todayMeals, language],
-    );
-
-    const totalCalories = useMemo(
-        () => sumMealCalories(context.todayMeals),
-        [context.todayMeals],
-    );
-
-    const mealInstructionSummary = useMemo(
-        () => buildMealInstructionSummary(context.todayMeals, language),
-        [context.todayMeals, language],
-    );
-
     const todayLabel = useMemo(
         () => formatDateLabel(new Date(), language),
         [language],
@@ -677,8 +513,6 @@ function useVoiceDerivedData(
                 dueDateLabel,
                 pregnancyStartLabel,
                 moodSummary,
-                mealInstructionSummary,
-                totalCalories,
                 userId: user?.id,
             }),
         [
@@ -686,11 +520,9 @@ function useVoiceDerivedData(
             displayName,
             dueDateLabel,
             language,
-            mealInstructionSummary,
             moodSummary,
             pregnancyStartLabel,
             todayLabel,
-            totalCalories,
             user?.id,
         ],
     );
@@ -700,8 +532,6 @@ function useVoiceDerivedData(
             buildContextSummaryRows({
                 profile: context.profile,
                 moodSummary,
-                mealSummaries,
-                totalCalories,
                 language,
                 dueDateLabel,
                 pregnancyStartLabel,
@@ -710,19 +540,14 @@ function useVoiceDerivedData(
             context.profile,
             dueDateLabel,
             language,
-            mealSummaries,
             moodSummary,
             pregnancyStartLabel,
-            totalCalories,
         ],
     );
 
     return {
         displayName,
         moodSummary,
-        mealSummaries,
-        totalCalories,
-        mealInstructionSummary,
         todayLabel,
         dueDateLabel,
         pregnancyStartLabel,

@@ -1,3 +1,4 @@
+import * as Haptics from "expo-haptics";
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
@@ -16,13 +17,31 @@ export function SettingsSection({
     onSignOut,
     isSigningOut = false,
 }: SettingsSectionProps) {
+    const handleNotifications = () => {
+        Haptics.selectionAsync();
+        // TODO: Implement notifications settings
+        console.log("Notifications settings - Coming soon");
+    };
+
+    const handlePrivacy = () => {
+        Haptics.selectionAsync();
+        // TODO: Implement privacy & security settings
+        console.log("Privacy & Security settings - Coming soon");
+    };
+
+    const handleHelp = () => {
+        Haptics.selectionAsync();
+        // TODO: Implement help & support
+        console.log("Help & Support - Coming soon");
+    };
+
     return (
         <View style={styles.container}>
             <Text style={styles.sectionTitle}>Settings</Text>
             <View style={styles.menuList}>
-                <ProfileMenuItem icon="bell" label="Notifications" onPress={() => { }} />
-                <ProfileMenuItem icon="lock" label="Privacy & Security" onPress={() => { }} />
-                <ProfileMenuItem icon="help-circle" label="Help & Support" onPress={() => { }} />
+                <ProfileMenuItem icon="bell" label="Notifications" onPress={handleNotifications} />
+                <ProfileMenuItem icon="lock" label="Privacy & Security" onPress={handlePrivacy} />
+                <ProfileMenuItem icon="help-circle" label="Help & Support" onPress={handleHelp} />
             </View>
             <Pressable
                 onPress={() => {

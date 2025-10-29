@@ -5,6 +5,7 @@ import { ActivityIndicator, StyleSheet, View } from "react-native";
 
 import { STORAGE_KEYS } from "@/constants/storage";
 import { MotherhoodTheme } from "@/constants/theme";
+import { supabase } from "@/lib/supabase";
 
 const { colors } = MotherhoodTheme;
 
@@ -12,6 +13,8 @@ export default function InitialRoute() {
     const router = useRouter();
 
     useEffect(() => {
+        let timeoutId: ReturnType<typeof setTimeout>;
+
         const determineInitialRoute = async () => {
             try {
                 // Check if user is logged in from cache first
@@ -19,10 +22,20 @@ export default function InitialRoute() {
                     STORAGE_KEYS.isLoggedIn
                 );
 
-                // If user was logged in, go directly to tabs
-                if (isLoggedIn === "true") {
+                // Verify with Supabase session to ensure cache is valid
+                const { data: { session } } = await supabase.auth.getSession();
+
+                // If both cache and session exist, go directly to tabs
+                if (isLoggedIn === "true" && session) {
                     router.replace("/(tabs)");
                     return;
+                }
+
+                // If cache says logged in but no session, clear cache and show login
+                if (isLoggedIn === "true" && !session) {
+                    await AsyncStorage.removeItem(STORAGE_KEYS.isLoggedIn);
+                    await AsyncStorage.removeItem(STORAGE_KEYS.userId);
+                    await AsyncStorage.removeItem(STORAGE_KEYS.userEmail);
                 }
 
                 // Check if user has completed onboarding
@@ -42,7 +55,17 @@ export default function InitialRoute() {
             }
         };
 
-        determineInitialRoute();
+        // Set a timeout fallback in case something hangs
+        timeoutId = setTimeout(() => {
+            console.warn("Initial route determination timed out, defaulting to welcome");
+            router.replace("/welcome");
+        }, 5000);
+
+        determineInitialRoute().finally(() => {
+            clearTimeout(timeoutId);
+        });
+
+        return () => clearTimeout(timeoutId);
     }, [router]);
 
     return (

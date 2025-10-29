@@ -5,7 +5,6 @@ import React, { useCallback, useState } from "react";
 import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { LanguageSelector } from "@/components/language-selector";
-import { AnalysisHistorySection } from "@/components/profile/analysis-history-section";
 import { DueDateCard } from "@/components/profile/due-date-card";
 import { ProfileHeader } from "@/components/profile/profile-header";
 import { SettingsSection } from "@/components/profile/settings-section";
@@ -13,7 +12,6 @@ import { PregnancyCalendar } from "@/components/ui/pregnancy-calendar";
 import { PregnancyStartDatePicker } from "@/components/ui/pregnancy-start-date-picker";
 import { MotherhoodTheme } from "@/constants/theme";
 import { useAuth } from "@/hooks/use-auth";
-import type { ImageAnalysisResult } from "@/lib/image-analysis-types";
 import { getCurrentUserId } from "@/lib/rls-helpers";
 import { supabase } from "@/lib/supabase";
 
@@ -23,8 +21,6 @@ export default function ProfileScreen() {
   const router = useRouter();
   const { user, signOut, preferredLanguage, updateLanguagePreference } =
     useAuth();
-  const [mealHistory, setMealHistory] = useState<ImageAnalysisResult[]>([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pregnancyStartDate, setPregnancyStartDate] = useState<string | null>(null);
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
@@ -36,7 +32,8 @@ export default function ProfileScreen() {
     try {
       setIsSigningOut(true);
       await signOut();
-      router.replace("/welcome" as any);
+      // Navigate to login screen after successful sign out
+      router.replace("/login");
     } catch (err) {
       console.error("Sign out error:", err);
     } finally {
@@ -136,40 +133,10 @@ export default function ProfileScreen() {
     }
   };
 
-  const fetchAnalysisHistory = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const userId = await getCurrentUserId();
-
-      if (!userId) {
-        setError("Not authenticated");
-        return;
-      }
-
-      const { data: mealData, error: mealError } = await supabase
-        .from("image_analysis_results")
-        .select("*")
-        .eq("user_id", userId)
-        .eq("analysis_type", "meal")
-        .order("created_at", { ascending: false })
-        .limit(10);
-
-      if (mealError) throw mealError;
-      setMealHistory((mealData || []) as ImageAnalysisResult[]);
-    } catch (err) {
-      console.error("Error fetching history:", err);
-      setError(err instanceof Error ? err.message : "Failed to load history");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   useFocusEffect(
     useCallback(() => {
-      fetchAnalysisHistory();
       loadPregnancyData();
-    }, [fetchAnalysisHistory, loadPregnancyData])
+    }, [loadPregnancyData])
   );
 
   return (
@@ -227,12 +194,6 @@ export default function ProfileScreen() {
               selectedLanguage={preferredLanguage}
               onLanguageChange={handleLanguageChange}
               isLoading={isUpdatingLanguage}
-            />
-
-            <AnalysisHistorySection
-              mealHistory={mealHistory}
-              loading={loading}
-              error={error}
             />
 
             <SettingsSection
