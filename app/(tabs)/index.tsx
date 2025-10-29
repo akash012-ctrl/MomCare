@@ -255,7 +255,7 @@ export default function HomeDashboard() {
         {/* Header with Greeting */}
         <View style={styles.headerWrapper}>
           <LinearGradient
-            colors={[colors.primary, colors.blush]}
+            colors={[colors.success, colors.mint]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.header}
@@ -589,12 +589,12 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
   },
   headerGreeting: {
-    color: colors.textPrimary,
+    color: colors.surface,
     fontSize: typography.headline,
     fontWeight: "700",
   },
   headerSubtext: {
-    color: colors.textSecondary,
+    color: colors.surface,
     fontSize: typography.body,
     marginTop: spacing.xs,
   },
@@ -849,9 +849,6 @@ const styles = StyleSheet.create({
   },
   statBox: {
     flex: 1,
-    backgroundColor: colors.mint,
-    borderRadius: radii.md,
-    padding: spacing.md,
     alignItems: "center",
   },
   bulletItem: {

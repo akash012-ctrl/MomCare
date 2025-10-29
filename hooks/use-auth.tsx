@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { useCallback, useContext, useEffect, useState } from "react";
 
+import { cacheUserSession, clearCachedUserSession, getCachedUserSession } from "@/lib/cache-manager";
 import { supabase } from "@/lib/supabase";
 import type {
   AuthContextType,
@@ -17,6 +18,30 @@ function AuthProviderComponent({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(false); // Only true during explicit auth operations
   const [authError, setAuthError] = useState<string | null>(null);
   const [preferredLanguage, setPreferredLanguage] = useState<"en" | "hi">("en");
+  const [isInitializing, setIsInitializing] = useState(true);
+
+  // Preload user from cache immediately for instant UI
+  useEffect(() => {
+    const preloadFromCache = async () => {
+      try {
+        const cachedSession = await getCachedUserSession();
+        if (cachedSession.isLoggedIn && cachedSession.userId) {
+          // Set a placeholder user from cache for instant UI
+          setUser({
+            id: cachedSession.userId,
+            email: cachedSession.userEmail || "",
+            name: undefined,
+          });
+        }
+      } catch (error) {
+        console.error("Error preloading from cache:", error);
+      } finally {
+        setIsInitializing(false);
+      }
+    };
+
+    preloadFromCache();
+  }, []);
 
   // Restore session on app launch
   useEffect(() => {
@@ -47,13 +72,18 @@ function AuthProviderComponent({ children }: { children: React.ReactNode }) {
               });
           }
 
-          setUser({
+          const userData = {
             id: data.session.user.id,
             email: data.session.user.email ?? "",
             name: profile?.full_name ?? data.session.user.user_metadata?.name,
             avatar_url: profile?.avatar_url,
             created_at: profile?.created_at,
-          });
+          };
+
+          setUser(userData);
+
+          // Cache login state for instant app reopening
+          await cacheUserSession(userData.id, userData.email);
 
           // Set preferred language from profile
           if (profile?.preferred_language) {
@@ -92,13 +122,18 @@ function AuthProviderComponent({ children }: { children: React.ReactNode }) {
               });
           }
 
-          setUser({
+          const userData = {
             id: session.user.id,
             email: session.user.email ?? "",
             name: profile?.full_name ?? session.user.user_metadata?.name,
             avatar_url: profile?.avatar_url,
             created_at: profile?.created_at,
-          });
+          };
+
+          setUser(userData);
+
+          // Cache login state
+          await cacheUserSession(userData.id, userData.email);
 
           // Set preferred language from profile
           if (profile?.preferred_language) {
@@ -107,6 +142,9 @@ function AuthProviderComponent({ children }: { children: React.ReactNode }) {
         } else {
           setUser(null);
           setPreferredLanguage("en"); // Reset to default
+
+          // Clear cached login state
+          await clearCachedUserSession();
         }
       }
     );
@@ -158,11 +196,16 @@ function AuthProviderComponent({ children }: { children: React.ReactNode }) {
             // Don't throw - user is created, profile creation can be retried
           }
 
-          setUser({
+          const userData = {
             id: data.user.id,
             email: data.user.email ?? "",
             name,
-          });
+          };
+
+          setUser(userData);
+
+          // Cache login state
+          await cacheUserSession(userData.id, userData.email);
         }
       } catch (err) {
         const errorMessage =
@@ -220,13 +263,18 @@ function AuthProviderComponent({ children }: { children: React.ReactNode }) {
           console.error("Profile fetch error:", profileError);
         }
 
-        setUser({
+        const userData = {
           id: data.user.id,
           email: data.user.email ?? "",
           name: profile?.full_name ?? data.user.user_metadata?.name,
           avatar_url: profile?.avatar_url,
           created_at: profile?.created_at,
-        });
+        };
+
+        setUser(userData);
+
+        // Cache login state for instant app reopening
+        await cacheUserSession(userData.id, userData.email);
       }
     } catch (err) {
       const errorMessage =
@@ -245,6 +293,9 @@ function AuthProviderComponent({ children }: { children: React.ReactNode }) {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       setUser(null);
+
+      // Clear all cached login data
+      await clearCachedUserSession();
       await AsyncStorage.removeItem("auth");
     } catch (err) {
       const errorMessage =

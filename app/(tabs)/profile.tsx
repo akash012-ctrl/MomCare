@@ -183,7 +183,6 @@ export default function ProfileScreen() {
           <ProfileHeader
             name={user?.name || "Mama"}
             email={user?.email ?? undefined}
-            emailVerified={user?.email_verified}
           />
         </MotiView>
 

@@ -14,6 +14,18 @@ export default function InitialRoute() {
     useEffect(() => {
         const determineInitialRoute = async () => {
             try {
+                // Check if user is logged in from cache first
+                const isLoggedIn = await AsyncStorage.getItem(
+                    STORAGE_KEYS.isLoggedIn
+                );
+
+                // If user was logged in, go directly to tabs
+                if (isLoggedIn === "true") {
+                    router.replace("/(tabs)");
+                    return;
+                }
+
+                // Check if user has completed onboarding
                 const hasCompleted = await AsyncStorage.getItem(
                     STORAGE_KEYS.hasCompletedOnboarding
                 );
@@ -25,7 +37,7 @@ export default function InitialRoute() {
 
                 router.replace("/onboarding");
             } catch (error) {
-                console.error("Failed to determine onboarding state:", error);
+                console.error("Failed to determine initial route:", error);
                 router.replace("/welcome");
             }
         };

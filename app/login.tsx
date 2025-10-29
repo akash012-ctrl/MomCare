@@ -1,12 +1,12 @@
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { MotiView } from "moti";
 import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Image,
+  ImageBackground,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -230,12 +230,14 @@ export default function LoginScreen() {
   const errorToShow = localError ?? authError;
 
   return (
-    <LinearGradient
-      colors={[colors.primary, colors.accent]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={styles.gradient}
+    <ImageBackground
+      source={require("@/assets/onboarding_images/6_illustration.jpg")}
+      style={styles.backgroundImage}
+      resizeMode="cover"
     >
+      {/* Dark overlay for text visibility */}
+      <View style={styles.darkOverlay} />
+
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <KeyboardAvoidingView
           style={styles.flex}
@@ -341,13 +343,20 @@ export default function LoginScreen() {
           </View>
         </KeyboardAvoidingView>
       </SafeAreaView>
-    </LinearGradient>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
   gradient: {
     flex: 1,
+  },
+  backgroundImage: {
+    flex: 1,
+  },
+  darkOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
   },
   safeArea: {
     flex: 1,
@@ -361,7 +370,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   card: {
-    backgroundColor: colors.surface,
+    backgroundColor: "rgba(255, 255, 255, 0.95)",
     borderRadius: radii.xl,
     padding: spacing.xxl,
     gap: spacing.lg,
@@ -436,8 +445,11 @@ const styles = StyleSheet.create({
   },
   toggleText: {
     textAlign: "center",
-    color: colors.textSecondary,
+    color: colors.surface,
     fontSize: typography.label,
+    textShadowColor: "rgba(0, 0, 0, 0.75)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
   toggleHighlight: {
     color: colors.primary,

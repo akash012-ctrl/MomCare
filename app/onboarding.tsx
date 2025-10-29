@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
+  ImageBackground,
   Pressable,
   StyleSheet,
   Text,
@@ -20,6 +21,16 @@ import { MotherhoodTheme } from "@/constants/theme";
 import { supabase } from "@/lib/supabase";
 
 const { colors, radii, spacing, typography, shadows } = MotherhoodTheme;
+
+// Onboarding background images
+const ONBOARDING_IMAGES = [
+  require("@/assets/onboarding_images/1_illustration.jpg"),
+  require("@/assets/onboarding_images/2_illustration.jpg"),
+  require("@/assets/onboarding_images/3_illustration.jpg"),
+  require("@/assets/onboarding_images/4_illustration.jpg"),
+  require("@/assets/onboarding_images/5_illustration.jpg"),
+  require("@/assets/onboarding_images/6_illustration.jpg"),
+];
 
 interface OnboardingSlide {
   id: string;
@@ -51,25 +62,38 @@ interface SlideCardProps {
 }
 
 function SlideCard({ slide, index }: SlideCardProps) {
+  const imageIndex = index % ONBOARDING_IMAGES.length;
+
   return (
     <View style={styles.slide}>
-      <MotiView
-        from={{ opacity: 0, translateY: 30 }}
-        animate={{ opacity: 1, translateY: 0 }}
-        transition={{ delay: index * 60, type: "timing", duration: 400 }}
-        style={styles.iconBadge}
+      <ImageBackground
+        source={ONBOARDING_IMAGES[imageIndex]}
+        style={styles.slideBackground}
+        resizeMode="cover"
       >
-        <LinearGradient
-          colors={[colors.primary, colors.secondary]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.iconGradient}
-        >
-          <Feather name={slide.icon} size={26} color={colors.surface} />
-        </LinearGradient>
-      </MotiView>
-      <Text style={styles.slideTitle}>{slide.title}</Text>
-      <Text style={styles.slideDescription}>{slide.description}</Text>
+        {/* Dark overlay for text visibility */}
+        <View style={styles.darkOverlay} />
+
+        <View style={styles.slideContent}>
+          <MotiView
+            from={{ opacity: 0, translateY: 30 }}
+            animate={{ opacity: 1, translateY: 0 }}
+            transition={{ delay: index * 60, type: "timing", duration: 400 }}
+            style={styles.iconBadge}
+          >
+            <LinearGradient
+              colors={[colors.primary, colors.secondary]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.iconGradient}
+            >
+              <Feather name={slide.icon} size={26} color={colors.surface} />
+            </LinearGradient>
+          </MotiView>
+          <Text style={styles.slideTitle}>{slide.title}</Text>
+          <Text style={styles.slideDescription}>{slide.description}</Text>
+        </View>
+      </ImageBackground>
     </View>
   );
 }
@@ -325,16 +349,30 @@ export default function OnboardingCarouselScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.textPrimary,
   },
   container: {
     flex: 1,
     paddingVertical: spacing.xxxl,
     alignItems: "center",
     gap: spacing.xxl,
+    backgroundColor: colors.textPrimary,
   },
   slide: {
     width: spacing.xxxl * 12,
+    height: "100%",
+  },
+  slideBackground: {
+    flex: 1,
+    width: "100%",
+    height: "100%",
+  },
+  darkOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  slideContent: {
+    flex: 1,
     alignItems: "center",
     justifyContent: "center",
     gap: spacing.lg,
@@ -355,13 +393,19 @@ const styles = StyleSheet.create({
   slideTitle: {
     fontSize: typography.headline,
     fontWeight: "700",
-    color: colors.textPrimary,
+    color: colors.surface,
+    textShadowColor: "rgba(0, 0, 0, 0.75)",
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
   slideDescription: {
     fontSize: typography.body,
-    color: colors.textSecondary,
+    color: colors.surface,
     textAlign: "center",
     lineHeight: 22,
+    textShadowColor: "rgba(0, 0, 0, 0.75)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
   indicatorRow: {
     flexDirection: "row",

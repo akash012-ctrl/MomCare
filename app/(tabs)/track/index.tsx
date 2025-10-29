@@ -36,7 +36,7 @@ const trackSections = [
     route: "/(tabs)/track/nutrition-coach",
   },
   {
-    title: "Goals & Achievements",
+    title: "Goals",
     subtitle: "Celebrate weekly wins",
     icon: "award",
     route: "/(tabs)/track/goals",
