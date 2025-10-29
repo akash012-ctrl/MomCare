@@ -15,7 +15,7 @@ export function ProfileHeader({ name, email }: ProfileHeaderProps) {
     return (
         <View style={styles.container}>
             <View style={styles.avatarPlaceholder}>
-                <Feather name="user" size={32} color={colors.secondary} />
+                <Feather name="user" size={32} color={colors.surface} />
             </View>
             <View style={styles.userInfo}>
                 <Text style={styles.userName}>{name}</Text>

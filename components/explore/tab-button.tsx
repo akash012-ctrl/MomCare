@@ -24,8 +24,8 @@ export function TabButton({ tab, isActive, onPress }: TabButtonProps) {
     return (
         <TouchableOpacity
             style={[styles.tabButton, isActive && styles.tabButtonActive]}
-            onPress={async () => {
-                await Haptics.selectionAsync();
+            onPress={() => {
+                Haptics.selectionAsync();
                 onPress();
             }}
         >

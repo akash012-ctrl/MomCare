@@ -62,7 +62,7 @@ function getMarkdownStyles(isUser: boolean) {
         },
         code_inline: {
             backgroundColor: isUser ? "rgba(255, 255, 255, 0.2)" : colors.surface,
-            color: isUser ? colors.surface : colors.secondary,
+            color: isUser ? colors.surface : colors.primary,
             paddingHorizontal: 4,
             borderRadius: 4,
             fontFamily: "Courier New",
@@ -75,7 +75,7 @@ function getMarkdownStyles(isUser: boolean) {
             marginVertical: 8,
         },
         link: {
-            color: colors.secondary,
+            color: isUser ? colors.surface : colors.primary,
             textDecorationLine: "underline" as const,
         },
     };
@@ -179,7 +179,7 @@ const styles = StyleSheet.create({
     },
     userBubble: {
         alignSelf: "flex-end",
-        backgroundColor: colors.secondary,
+        backgroundColor: colors.primary,
     },
     messageBubbleContent: {
         flex: 1,
@@ -202,13 +202,15 @@ const styles = StyleSheet.create({
         paddingVertical: spacing.xs,
         paddingHorizontal: spacing.sm,
         borderRadius: radii.sm,
-        backgroundColor: colors.lavender,
+        backgroundColor: colors.surface,
         maxWidth: "100%",
+        borderWidth: 1,
+        borderColor: colors.primary,
     },
     sourceBadgeCitation: {
         fontSize: typography.label,
         fontWeight: "600",
-        color: colors.secondary,
+        color: colors.primary,
     },
     sourceBadgeTitle: {
         marginTop: 2,

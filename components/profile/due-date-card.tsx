@@ -107,14 +107,14 @@ const styles = StyleSheet.create({
         fontWeight: '600',
     },
     dateContainer: {
-        backgroundColor: colors.blush,
+        backgroundColor: colors.primary,
         borderRadius: radii.md,
         padding: spacing.lg,
         alignItems: 'center',
         marginBottom: spacing.md,
     },
     date: {
-        color: colors.textPrimary,
+        color: colors.surface,
         fontSize: typography.headline,
         fontWeight: '700',
     },
@@ -122,13 +122,15 @@ const styles = StyleSheet.create({
         gap: spacing.md,
     },
     countdownBox: {
-        backgroundColor: colors.mint,
+        backgroundColor: colors.surface,
         borderRadius: radii.md,
         padding: spacing.md,
         alignItems: 'center',
+        borderWidth: 1,
+        borderColor: colors.primary,
     },
     countdownNumber: {
-        color: colors.success,
+        color: colors.primary,
         fontSize: 48,
         fontWeight: '700',
     },
@@ -138,10 +140,12 @@ const styles = StyleSheet.create({
         marginTop: spacing.xs,
     },
     overdueNotice: {
-        backgroundColor: colors.blush,
+        backgroundColor: colors.surface,
         borderRadius: radii.md,
         padding: spacing.md,
         alignItems: 'center',
+        borderWidth: 1,
+        borderColor: colors.primary,
     },
     overdueText: {
         color: colors.textPrimary,
@@ -149,7 +153,7 @@ const styles = StyleSheet.create({
         fontWeight: '600',
     },
     soonNotice: {
-        backgroundColor: '#FFF9E6',
+        backgroundColor: `${colors.accent}15`,
         borderRadius: radii.md,
         padding: spacing.md,
         alignItems: 'center',

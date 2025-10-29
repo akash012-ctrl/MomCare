@@ -24,7 +24,7 @@ export default function TabLayout() {
           .from("user_profiles")
           .select("pregnancy_start_date")
           .eq("id", user.id)
-          .maybeSingle(); // Use maybeSingle instead of single to handle missing records gracefully
+          .maybeSingle();
 
         if (error && error.code !== "PGRST116") {
           console.error("Error checking pregnancy date:", error);
@@ -32,12 +32,12 @@ export default function TabLayout() {
           return;
         }
 
-        // Show modal if user doesn't have pregnancy_start_date set
-        // This blocks access until date is selected
-        setShowDateModal(!data?.pregnancy_start_date);
+        // Only show modal if we explicitly don't have a date
+        const hasDate = data?.pregnancy_start_date !== null && data?.pregnancy_start_date !== undefined;
+        setShowDateModal(!hasDate);
       } catch (err) {
         console.error("Error in checkPregnancyDate:", err);
-        setShowDateModal(false); // Don't block on error
+        setShowDateModal(false);
       } finally {
         setIsCheckingDate(false);
       }

@@ -33,28 +33,63 @@ interface KickCount {
   created_at: string;
 }
 
+const translations = {
+  en: {
+    title: "Kick Counter",
+    morning: "Morning",
+    afternoon: "Afternoon",
+    evening: "Evening",
+    night: "Night",
+    todayTotal: "Today's Total",
+    weeklyAverage: "Weekly Average",
+    kicks: "kicks",
+    notesPlaceholder: "Add notes about baby's movements...",
+    saveButton: "Save Count",
+    history: "Today's History",
+    noHistory: "No kicks recorded yet today",
+    errorSaving: "Failed to save",
+    successSaved: "Kick count saved!",
+  },
+  hi: {
+    title: "किक काउंटर",
+    morning: "सुबह",
+    afternoon: "दोपहर",
+    evening: "शाम",
+    night: "रात",
+    todayTotal: "आज की कुल",
+    weeklyAverage: "साप्ताहिक ौसत",
+    kicks: "किक",
+    notesPlaceholder: "बच्चे की हरकतों के बारे में नोट्स जोड़ें...",
+    saveButton: "काउंट सेव करें",
+    history: "आज का इतिहास",
+    noHistory: "आज अभी तक कोई किक रिकॉर्ड नहीं हुई",
+    errorSaving: "सेव करने में विफल",
+    successSaved: "किक काउंट सेव हो गया!",
+  },
+};
+
 const TIME_PERIODS = [
   {
     value: "morning" as TimeOfDay,
-    label: "Morning",
+    labelKey: "morning" as const,
     icon: "☀️",
     color: colors.mint,
   },
   {
     value: "afternoon" as TimeOfDay,
-    label: "Afternoon",
+    labelKey: "afternoon" as const,
     icon: "🌤️",
     color: colors.peach,
   },
   {
     value: "evening" as TimeOfDay,
-    label: "Evening",
+    labelKey: "evening" as const,
     icon: "🌅",
     color: colors.primary,
   },
   {
     value: "night" as TimeOfDay,
-    label: "Night",
+    labelKey: "night" as const,
     icon: "🌙",
     color: colors.lilac,
   },
@@ -62,7 +97,9 @@ const TIME_PERIODS = [
 
 export default function KickCounter() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, preferredLanguage } = useAuth();
+  const language = preferredLanguage === "hi" ? "hi" : "en";
+  const t = translations[language];
   const { showAlert } = useAppAlert();
   const [refreshing, setRefreshing] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState<TimeOfDay>("morning");

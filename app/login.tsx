@@ -69,7 +69,7 @@ function AuthField({
         editable={editable}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor="rgba(112, 76, 87, 0.45)"
+        placeholderTextColor={`${colors.textSecondary}80`}
         autoCapitalize={autoCapitalize}
         keyboardType={keyboardType}
         autoCorrect={false}
@@ -461,7 +461,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     padding: spacing.md,
     borderRadius: radii.md,
-    backgroundColor: "#FF6B81",
+    backgroundColor: colors.primary,
   },
   errorText: {
     color: colors.surface,
@@ -474,7 +474,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     padding: spacing.md,
     borderRadius: radii.md,
-    backgroundColor: colors.success,
+    backgroundColor: colors.primary,
   },
   successText: {
     color: colors.surface,

@@ -93,37 +93,18 @@ export default function HomeDashboard() {
       console.error("Error loading feature cards:", error);
       // Fallback to default feature cards
       setFeatureCards([
+
         {
           id: "1",
-          title: "Ask AI",
-          icon: "message-circle",
-          route: "/(tabs)/assistant",
-          order: 1,
-        },
-        {
-          id: "2",
-          title: "Symptoms",
-          icon: "activity",
-          route: "/(tabs)/track/symptom-log",
-          order: 2,
-        },
-        {
-          id: "3",
           title: "Kicks",
           icon: "heart",
           route: "/(tabs)/track/kick-counter",
           order: 3,
         },
+
         {
-          id: "4",
-          title: "Goals",
-          icon: "award",
-          route: "/(tabs)/track/goals",
-          order: 4,
-        },
-        {
-          id: "5",
-          title: "Scan Food",
+          id: "2",
+          title: "Baby Safe Food",
           icon: "camera",
           route: "food-safety-scan",
           order: 5,
@@ -204,7 +185,7 @@ export default function HomeDashboard() {
         {/* Header with Greeting */}
         <View style={styles.headerWrapper}>
           <LinearGradient
-            colors={[colors.success, colors.mint]}
+            colors={[colors.primary, colors.accent]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.header}
@@ -245,7 +226,7 @@ export default function HomeDashboard() {
                   style={styles.tipCard}
                 >
                   <View style={styles.tipScroll} />
-                  <Text style={[styles.tipText, { color: colors.danger }]}>
+                  <Text style={[styles.tipText, { color: colors.primary }]}>
                     {tip}
                   </Text>
                 </MotiView>
@@ -285,14 +266,14 @@ export default function HomeDashboard() {
                     transition={{ type: "timing", duration: 120 }}
                     style={styles.compactFeatureContent}
                   >
+                    <Text style={styles.compactFeatureTitle}>{card.title}</Text>
                     <View style={styles.compactFeatureIcon}>
                       <Feather
                         name={card.icon as keyof typeof Feather.glyphMap}
-                        size={40}
-                        color={colors.lavender}
+                        size={30}
+                        color={colors.primary}
                       />
                     </View>
-                    <Text style={styles.compactFeatureTitle}>{card.title}</Text>
                   </MotiView>
                 )}
               </Pressable>
@@ -327,7 +308,7 @@ export default function HomeDashboard() {
               {/* Baby Development */}
               <View style={styles.infoSection}>
                 <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionIcon}>👶</Text>
+
                   <Text style={styles.sectionTitle}>{t.babyDevelopment}</Text>
                 </View>
                 <View style={styles.statsRow}>
@@ -351,7 +332,7 @@ export default function HomeDashboard() {
               {/* Maternal Changes */}
               <View style={styles.infoSection}>
                 <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionIcon}>💪</Text>
+
                   <Text style={styles.sectionTitle}>{t.yourBodyChanges}</Text>
                 </View>
                 {weeklyInfo.maternalChanges.map((item, index) => (
@@ -365,7 +346,7 @@ export default function HomeDashboard() {
               {/* Common Symptoms */}
               <View style={styles.infoSection}>
                 <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionIcon}>🌼</Text>
+
                   <Text style={styles.sectionTitle}>{t.commonSymptoms}</Text>
                 </View>
                 <View style={styles.symptomsGrid}>
@@ -380,7 +361,7 @@ export default function HomeDashboard() {
               {/* Tips & Advice */}
               <View style={styles.infoSection}>
                 <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionIcon}>✨</Text>
+
                   <Text style={styles.sectionTitle}>{t.tipsAdvice}</Text>
                 </View>
                 {weeklyInfo.tipsAndAdvice.map((tip, index) => (
@@ -412,42 +393,43 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
-    gap: spacing.sm,
-    justifyContent: "space-between",
+    gap: spacing.md,
+    flexWrap: "wrap",
   },
   compactFeatureWrapper: {
-    flex: 1,
+    width: "48%",
   },
   compactFeatureCard: {
     backgroundColor: colors.surface,
     borderRadius: radii.lg,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.sm,
-    alignItems: "center",
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.md,
+    minHeight: 80,
     ...shadows.card,
   },
   compactFeatureContent: {
+    flexDirection: "row",
     alignItems: "center",
     width: "100%",
+    gap: spacing.sm,
   },
   compactFeatureIcon: {
     alignItems: "center",
-
-    borderRadius: radii.md,
-    height: 44,
     justifyContent: "center",
-    width: 44,
-    marginBottom: spacing.xs,
+    borderRadius: radii.md,
+    height: 48,
+    width: 48,
+    backgroundColor: `${colors.primary}10`,
   },
   compactFeatureTitle: {
     color: colors.textPrimary,
-    fontSize: typography.caption,
+    fontSize: typography.body,
     fontWeight: "600",
-    textAlign: "center",
+    flex: 1,
   },
   featureCard: {
     borderRadius: radii.lg,
-    height: 140,
+    height: 100,
     width: "100%",
     ...shadows.card,
   },
@@ -641,13 +623,13 @@ const styles = StyleSheet.create({
     fontSize: typography.label,
   },
   statValue: {
-    color: colors.success,
+    color: colors.primary,
     fontSize: typography.headline,
     fontWeight: "700",
     marginTop: spacing.xs,
   },
   insightCard: {
-    backgroundColor: colors.lilac,
+    backgroundColor: colors.surface,
     borderLeftColor: colors.primary,
     borderLeftWidth: 4,
     borderRadius: radii.md,
@@ -758,7 +740,7 @@ const styles = StyleSheet.create({
     paddingLeft: spacing.xs,
   },
   bullet: {
-    color: colors.success,
+    color: colors.primary,
     fontSize: typography.body,
     fontWeight: "700",
     width: 20,
@@ -775,10 +757,12 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   symptomChip: {
-    backgroundColor: colors.peach,
+    backgroundColor: colors.surface,
     borderRadius: radii.md,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.primary,
   },
   symptomText: {
     color: colors.textPrimary,

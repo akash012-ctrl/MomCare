@@ -111,10 +111,10 @@ const TYPE_STYLES: Record<
   AlertType,
   { icon: keyof typeof Feather.glyphMap; color: string }
 > = {
-  info: { icon: "info", color: MotherhoodTheme.colors.secondary },
-  success: { icon: "check-circle", color: MotherhoodTheme.colors.success },
-  warning: { icon: "alert-triangle", color: MotherhoodTheme.colors.warning },
-  error: { icon: "x-circle", color: MotherhoodTheme.colors.danger },
+  info: { icon: "info", color: MotherhoodTheme.colors.primary },
+  success: { icon: "check-circle", color: MotherhoodTheme.colors.primary },
+  warning: { icon: "alert-triangle", color: MotherhoodTheme.colors.accent },
+  error: { icon: "x-circle", color: MotherhoodTheme.colors.primary },
 };
 
 const TONE_STYLES: Record<
@@ -122,19 +122,19 @@ const TONE_STYLES: Record<
   { backgroundColor: string; borderColor: string; textColor: string }
 > = {
   primary: {
-    backgroundColor: MotherhoodTheme.colors.secondary,
-    borderColor: MotherhoodTheme.colors.secondary,
-    textColor: "#FFFFFF",
+    backgroundColor: MotherhoodTheme.colors.primary,
+    borderColor: MotherhoodTheme.colors.primary,
+    textColor: MotherhoodTheme.colors.surface,
   },
   secondary: {
     backgroundColor: MotherhoodTheme.colors.surface,
-    borderColor: MotherhoodTheme.colors.lavender,
+    borderColor: MotherhoodTheme.colors.primary,
     textColor: MotherhoodTheme.colors.textPrimary,
   },
   danger: {
-    backgroundColor: MotherhoodTheme.colors.danger,
-    borderColor: MotherhoodTheme.colors.danger,
-    textColor: "#FFFFFF",
+    backgroundColor: MotherhoodTheme.colors.primary,
+    borderColor: MotherhoodTheme.colors.primary,
+    textColor: MotherhoodTheme.colors.surface,
   },
 };
 

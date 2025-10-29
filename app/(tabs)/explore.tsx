@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
+import * as Haptics from "expo-haptics";
 import React, { useCallback, useMemo, useState } from "react";
 import { Linking, Share, StyleSheet } from "react-native";
 
@@ -16,16 +17,38 @@ import { MotherhoodTheme } from "@/constants/theme";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/lib/supabase";
 
+const translations = {
+  en: {
+    categories: ["All", "Pregnancy", "Nutrition", "Posture", "Wellness"],
+    tabs: {
+      resources: "Resources",
+      tips: "Tips",
+      trending: "Trending",
+      saved: "Saved",
+    },
+    searchPlaceholder: "Search articles, tips...",
+    noResults: "No results found",
+    errorTitle: "Error",
+    errorMessage: "Failed to load content",
+  },
+  hi: {
+    categories: ["सभी", "गर्भावस्था", "पोषण", "मुद्रा", "स्वास्थ्य"],
+    tabs: {
+      resources: "संसाधन",
+      tips: "सुझाव",
+      trending: "ट्रेंडिंग",
+      saved: "सेव किए गए",
+    },
+    searchPlaceholder: "लेख, सुझाव खोजें...",
+    noResults: "कोई परिणाम नहीं मिला",
+    errorTitle: "त्रुटि",
+    errorMessage: "सामग्री लोड करने में विफल",
+  },
+};
+
 const CATEGORIES = ["All", "Pregnancy", "Nutrition", "Posture", "Wellness"];
 
-const TABS: TabConfig[] = [
-  { id: "resources", label: "Resources", icon: "book" },
-  { id: "tips", label: "Tips", icon: "zap" },
-  { id: "trending", label: "Trending", icon: "trending-up" },
-  { id: "saved", label: "Saved", icon: "bookmark" },
-];
-
-type TabId = TabConfig["id"];
+type TabId = "resources" | "tips" | "trending" | "saved";
 
 type ShowAlertFn = (options: ShowAlertOptions) => void;
 
@@ -182,13 +205,38 @@ function filterArticles({
 
 export default function ExploreScreen() {
   const { showAlert } = useAppAlert();
-  const { user } = useAuth();
+  const { user, preferredLanguage } = useAuth();
+  const language = preferredLanguage === "hi" ? "hi" : "en";
+  const t = translations[language];
+
+  const TABS: TabConfig[] = [
+    { id: "resources", label: t.tabs.resources, icon: "book" },
+    { id: "tips", label: t.tabs.tips, icon: "zap" },
+    { id: "trending", label: t.tabs.trending, icon: "trending-up" },
+    { id: "saved", label: t.tabs.saved, icon: "bookmark" },
+  ];
   const { articles, tips, loading, loadArticles } = useExploreArticles(showAlert);
   const { savedArticles, toggleSavedArticle, loadSavedArticles } =
     useSavedArticles(showAlert);
   const [activeTab, setActiveTab] = useState<TabId>("resources");
-  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [selectedCategory, setSelectedCategory] = useState(t.categories[0]);
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Map selected category from UI language back to English for filtering
+  const categoryMapping: Record<string, string> = {
+    "All": "All",
+    "सभी": "All",
+    "Pregnancy": "Pregnancy",
+    "गर्भावस्था": "Pregnancy",
+    "Nutrition": "Nutrition",
+    "पोषण": "Nutrition",
+    "Posture": "Posture",
+    "मुद्रा": "Posture",
+    "Wellness": "Wellness",
+    "स्वास्थ्य": "Wellness",
+  };
+
+  const englishCategory = categoryMapping[selectedCategory] || selectedCategory;
 
   useFocusEffect(
     useCallback(() => {
@@ -201,13 +249,13 @@ export default function ExploreScreen() {
     () =>
       filterArticles({
         activeTab,
-        selectedCategory,
+        selectedCategory: englishCategory,
         searchQuery,
         savedArticles,
         articles,
         tips,
       }),
-    [activeTab, selectedCategory, searchQuery, savedArticles, articles, tips]
+    [activeTab, englishCategory, searchQuery, savedArticles, articles, tips]
   );
 
   const handleShareArticle = useCallback(async (article: Article) => {
@@ -262,8 +310,8 @@ export default function ExploreScreen() {
   return (
     <ThemedView style={styles.container}>
       <ExploreHeader
-        title="Explore"
-        subtitle="Discover prenatal guides and wellness tips"
+        title={language === "hi" ? "खोजें" : "Explore"}
+        subtitle={language === "hi" ? "प्रसवपूर्व मार्गदर्शिका और स्वास्थ्य सुझाव खोजें" : "Discover prenatal guides and wellness tips"}
       />
 
       <ExploreTabBar
@@ -274,14 +322,14 @@ export default function ExploreScreen() {
 
       <ExploreSearchBar
         value={searchQuery}
-        placeholder={`Search ${activeTab}...`}
+        placeholder={t.searchPlaceholder}
         onChangeText={setSearchQuery}
         onClear={clearSearch}
       />
 
       {activeTab !== "saved" ? (
         <CategoryFilterList
-          categories={CATEGORIES}
+          categories={t.categories}
           selectedCategory={selectedCategory}
           onSelect={setSelectedCategory}
         />

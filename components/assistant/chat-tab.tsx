@@ -14,6 +14,8 @@ import React, {
 import {
     ActivityIndicator,
     FlatList,
+    KeyboardAvoidingView,
+    Platform,
     Pressable,
     StyleSheet,
     Text,
@@ -106,7 +108,7 @@ interface ConversationState {
     isHydrating: boolean;
 }
 
-function useConversationState(user: User | null): ConversationState {
+function useConversationState(user: User | null, isOnline: boolean): ConversationState {
     const [activeConversationId, setActiveConversationId] = useState<string | null>(
         null,
     );
@@ -122,6 +124,14 @@ function useConversationState(user: User | null): ConversationState {
         let cancelled = false;
 
         if (!user?.id || !activeConversationId) {
+            setIsHydrating(false);
+            return () => {
+                cancelled = true;
+            };
+        }
+
+        if (!isOnline) {
+            setIsHydrating(false);
             return () => {
                 cancelled = true;
             };
@@ -135,7 +145,11 @@ function useConversationState(user: User | null): ConversationState {
                     activeConversationId,
                 );
 
-                if (cancelled || !Array.isArray(history) || history.length === 0) {
+                if (cancelled) {
+                    return;
+                }
+
+                if (!Array.isArray(history) || history.length === 0) {
                     return;
                 }
 
@@ -162,7 +176,7 @@ function useConversationState(user: User | null): ConversationState {
         return () => {
             cancelled = true;
         };
-    }, [user?.id, activeConversationId]);
+    }, [user?.id, activeConversationId, isOnline]);
 
     return {
         activeConversationId,
@@ -187,10 +201,12 @@ function useAttachmentController({
     user,
     activeConversationId,
     setError,
+    isOnline,
 }: {
     user: User | null;
     activeConversationId: string | null;
     setError: (value: string | null) => void;
+    isOnline: boolean;
 }): AttachmentController {
     const [attachments, setAttachments] = useState<ChatAttachmentPreview[]>([]);
     const [isAttachmentUploading, setIsAttachmentUploading] = useState(false);
@@ -215,6 +231,11 @@ function useAttachmentController({
 
         if (!user?.id) {
             setError("Please sign in to share documents.");
+            return;
+        }
+
+        if (!isOnline) {
+            setError("Connect to the internet to share documents.");
             return;
         }
 
@@ -320,6 +341,7 @@ function useAttachmentController({
         activeConversationId,
         attachmentLimitReached,
         isAttachmentUploading,
+        isOnline,
         setError,
         user?.id,
     ]);
@@ -353,6 +375,7 @@ function useChatComposer({
     conversation,
     attachments,
     setError,
+    isOnline,
 }: {
     user: User | null;
     language: "en" | "hi";
@@ -361,6 +384,7 @@ function useChatComposer({
     conversation: ConversationState;
     attachments: AttachmentController;
     setError: (value: string | null) => void;
+    isOnline: boolean;
 }): ComposerController {
     const [isProcessing, setIsProcessing] = useState(false);
 
@@ -377,6 +401,11 @@ function useChatComposer({
         }
 
         if (attachments.isAttachmentUploading) {
+            return;
+        }
+
+        if (!isOnline) {
+            setError("Connect to the internet to chat with MomCare.");
             return;
         }
 
@@ -459,6 +488,7 @@ function useChatComposer({
         attachments,
         conversation,
         draft,
+        isOnline,
         language,
         setDraft,
         setError,
@@ -475,19 +505,22 @@ function useChatComposer({
 interface ChatAssistantTabProps {
     user: User | null;
     language: "en" | "hi";
+    isOnline: boolean;
 }
 
 export function ChatAssistantTab({
     user,
     language,
+    isOnline,
 }: ChatAssistantTabProps): React.ReactElement {
     const [draft, setDraft] = useState("");
     const [error, setError] = useState<string | null>(null);
-    const conversation = useConversationState(user);
+    const conversation = useConversationState(user, isOnline);
     const attachments = useAttachmentController({
         user,
         activeConversationId: conversation.activeConversationId,
         setError,
+        isOnline,
     });
     const composer = useChatComposer({
         user,
@@ -497,6 +530,7 @@ export function ChatAssistantTab({
         conversation,
         attachments,
         setError,
+        isOnline,
     });
 
     const flatListRef = useRef<FlatList<AssistantMessage>>(null);
@@ -505,13 +539,31 @@ export function ChatAssistantTab({
         flatListRef.current?.scrollToEnd({ animated: true });
     }, [conversation.messages.length]);
 
+    useEffect(() => {
+        if (!isOnline) {
+            setError(null);
+        }
+    }, [isOnline]);
+
     const showEmptyState =
-        conversation.messages.length === 0 && !conversation.isHydrating;
+        conversation.messages.length === 0 && !conversation.isHydrating && isOnline;
+
+    const inputPlaceholder = isOnline ? undefined : "Connect to the internet to chat";
 
     return (
-        <View style={styles.container}>
-            {showEmptyState ? (
-                <ChatEmptyState />
+        <KeyboardAvoidingView
+            style={styles.container}
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
+        >
+            {!isOnline ? (
+                <View style={styles.messagesContainer}>
+                    <AssistantOfflineState />
+                </View>
+            ) : showEmptyState ? (
+                <View style={styles.messagesContainer}>
+                    <ChatEmptyState />
+                </View>
             ) : (
                 <FlatList
                     ref={flatListRef}
@@ -532,7 +584,7 @@ export function ChatAssistantTab({
 
             <ChatErrorBanner error={error} onDismiss={() => setError(null)} />
 
-            <View style={styles.inputWrapper}>
+            <View style={styles.inputContainer}>
                 <AttachmentPreviewList
                     attachments={attachments.attachments}
                     onRemove={attachments.removeAttachment}
@@ -545,9 +597,11 @@ export function ChatAssistantTab({
                     isSubmitting={composer.isProcessing}
                     hasAttachments={attachments.attachments.length > 0}
                     isAttachmentUploading={attachments.isAttachmentUploading}
+                    placeholder={inputPlaceholder}
+                    disabled={!isOnline}
                 />
             </View>
-        </View>
+        </KeyboardAvoidingView>
     );
 }
 
@@ -558,6 +612,18 @@ function ChatEmptyState(): React.ReactElement {
             <Text style={styles.emptyStateTitle}>Start a Conversation</Text>
             <Text style={styles.emptyStateText}>
                 Ask anything about your pregnancy, and I will guide you step by step.
+            </Text>
+        </View>
+    );
+}
+
+function AssistantOfflineState(): React.ReactElement {
+    return (
+        <View style={styles.offlineState}>
+            <Ionicons name="cloud-offline" size={44} color={colors.primary} />
+            <Text style={styles.offlineTitle}>You're offline</Text>
+            <Text style={styles.offlineText}>
+                Connect to the internet to chat with MomCare.
             </Text>
         </View>
     );
@@ -678,6 +744,9 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
     },
+    messagesContainer: {
+        flex: 1,
+    },
     emptyState: {
         flex: 1,
         alignItems: "center",
@@ -699,7 +768,8 @@ const styles = StyleSheet.create({
     },
     messageList: {
         paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.lg,
+        paddingTop: spacing.lg,
+        paddingBottom: 120,
         gap: spacing.md,
     },
     loadingContainer: {
@@ -725,8 +795,14 @@ const styles = StyleSheet.create({
         color: colors.primary,
         fontWeight: "500",
     },
-    inputWrapper: {
+    inputContainer: {
+        position: "absolute",
+        bottom: 0,
+        left: 0,
+        right: 0,
         width: "100%",
+        backgroundColor: "transparent",
+        paddingBottom: spacing.md,
     },
     attachmentPreviewContainer: {
         paddingHorizontal: spacing.lg,
@@ -743,7 +819,7 @@ const styles = StyleSheet.create({
         borderRadius: radii.md,
         backgroundColor: colors.surface,
         borderWidth: 1,
-        borderColor: "#F5D6DB",
+        borderColor: colors.primary,
         ...shadows.soft,
     },
     attachmentChipText: {
@@ -776,11 +852,31 @@ const styles = StyleSheet.create({
         marginBottom: spacing.sm,
         padding: spacing.md,
         borderRadius: radii.md,
-        backgroundColor: colors.mutedPink,
+        backgroundColor: colors.surface,
+        borderWidth: 1,
+        borderColor: colors.primary,
     },
     feedbackText: {
         flex: 1,
         fontSize: typography.caption,
         color: colors.textPrimary,
+    },
+    offlineState: {
+        flex: 1,
+        alignItems: "center",
+        justifyContent: "center",
+        gap: spacing.lg,
+        paddingHorizontal: spacing.xl,
+    },
+    offlineTitle: {
+        fontSize: typography.title,
+        fontWeight: "600",
+        color: colors.textPrimary,
+    },
+    offlineText: {
+        fontSize: typography.body,
+        color: colors.textSecondary,
+        textAlign: "center",
+        maxWidth: 260,
     },
 });

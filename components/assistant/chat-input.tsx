@@ -22,6 +22,7 @@ interface ChatInputProps {
     isAttachmentUploading?: boolean;
     placeholder?: string;
     maxLength?: number;
+    disabled?: boolean;
 }
 
 const DEFAULT_PLACEHOLDER = "Ask your doubts";
@@ -55,20 +56,22 @@ export function ChatInput({
     isAttachmentUploading = false,
     placeholder = DEFAULT_PLACEHOLDER,
     maxLength = DEFAULT_MAX_LENGTH,
+    disabled = false,
 }: ChatInputProps) {
     const trimmedDraft = draft.trim();
     const sendDisabled =
         isSubmitting ||
         isAttachmentUploading ||
-        (!trimmedDraft && !hasAttachments);
+        (!trimmedDraft && !hasAttachments) ||
+        disabled;
 
     const attachmentButtonStyles = useMemo(
         () =>
             buildAttachmentButtonStyles(
-                isSubmitting || isAttachmentUploading,
+                isSubmitting || isAttachmentUploading || disabled,
                 hasAttachments
             ),
-        [isSubmitting, isAttachmentUploading, hasAttachments],
+        [disabled, hasAttachments, isAttachmentUploading, isSubmitting],
     );
 
     const sendButtonStyles = useMemo(
@@ -76,17 +79,20 @@ export function ChatInput({
         [sendDisabled],
     );
 
-    const sendIconColor = sendDisabled ? colors.textSecondary : colors.surface;
+    const sendIconColor = sendDisabled ? colors.primary : colors.surface;
 
     return (
         <View style={styles.inputContainer}>
             <View style={styles.inputWrapper}>
                 <Pressable
                     onPress={async () => {
+                        if (disabled) {
+                            return;
+                        }
                         await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                         onPickAttachment();
                     }}
-                    disabled={isSubmitting || isAttachmentUploading}
+                    disabled={isSubmitting || isAttachmentUploading || disabled}
                     style={attachmentButtonStyles}
                     accessibilityLabel="Attach file"
                 >
@@ -102,7 +108,7 @@ export function ChatInput({
                     placeholder={placeholder}
                     placeholderTextColor="rgba(112, 76, 87, 0.5)"
                     multiline
-                    editable={!isSubmitting}
+                    editable={!isSubmitting && !disabled}
                     maxLength={maxLength}
                     style={styles.input}
                     textAlignVertical="top"
@@ -116,6 +122,9 @@ export function ChatInput({
             >
                 <Pressable
                     onPress={async () => {
+                        if (disabled) {
+                            return;
+                        }
                         await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                         onSend();
                     }}
@@ -137,19 +146,21 @@ const styles = StyleSheet.create({
         gap: spacing.md,
         paddingHorizontal: spacing.lg,
         paddingVertical: spacing.md,
-        borderTopWidth: 1,
-        borderTopColor: "#F5D6DB",
-        backgroundColor: colors.background,
+        backgroundColor: "transparent",
     },
     inputWrapper: {
         flex: 1,
         flexDirection: "row",
         alignItems: "flex-end",
         gap: spacing.sm,
-        borderRadius: radii.md,
+        borderRadius: radii.lg,
         backgroundColor: colors.surface,
         paddingHorizontal: spacing.md,
-        ...shadows.soft,
+        shadowColor: colors.primary,
+        shadowOpacity: 0.3,
+        shadowRadius: 12,
+        shadowOffset: { width: 0, height: 4 },
+        elevation: 8,
     },
     attachmentButton: {
         padding: spacing.sm,
@@ -182,6 +193,8 @@ const styles = StyleSheet.create({
         transform: [{ scale: 0.95 }],
     },
     sendButtonDisabled: {
-        opacity: 0.5,
+        backgroundColor: colors.surface,
+        borderWidth: 1,
+        borderColor: colors.primary,
     },
 });

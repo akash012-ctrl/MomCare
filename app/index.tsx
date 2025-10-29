@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { useEffect } from "react";
-import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { ImageBackground, StyleSheet, View } from "react-native";
 
 import { STORAGE_KEYS } from "@/constants/storage";
 import { MotherhoodTheme } from "@/constants/theme";
@@ -69,9 +69,13 @@ export default function InitialRoute() {
     }, [router]);
 
     return (
-        <View style={styles.container}>
-            <ActivityIndicator size="large" color={colors.primary} />
-        </View>
+        <ImageBackground
+            source={require("@/assets/onboarding_images/6_illustration.jpg")}
+            style={styles.container}
+            resizeMode="cover"
+        >
+            <View style={styles.overlay} />
+        </ImageBackground>
     );
 }
 
@@ -80,6 +84,9 @@ const styles = StyleSheet.create({
         flex: 1,
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: colors.background,
+    },
+    overlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: "rgba(233, 30, 99, 0.1)",
     },
 });

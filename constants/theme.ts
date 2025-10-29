@@ -3,27 +3,27 @@ import { Platform } from 'react-native';
 
 const palette = {
   primary: '#E91E63',
-  secondary: '#9C27B0',
+  secondary: '#E91E63',
   accent: '#FF9800',
   background: '#FFF0F3',
-  surface: '#FFF8FA',
+  surface: '#FFFFFF',
   textPrimary: '#1A0A0D',
-  textSecondary: '#4A2A32',
-  success: '#66BB6A',
-  warning: '#FFA726',
-  danger: '#EF5350',
-  shadow: '#D81B60',
+  textSecondary: '#666666',
+  success: '#E91E63',
+  warning: '#FF9800',
+  danger: '#E91E63',
+  shadow: '#E91E63',
 };
 
 export const MotherhoodTheme = {
   colors: {
     ...palette,
-    mutedPink: '#F48FB1',
-    lavender: '#BA68C8',
-    peach: '#FFB74D',
-    mint: '#81C784',
-    lilac: '#AB47BC',
-    blush: '#EC407A',
+    mutedPink: '#E91E63',
+    lavender: '#E91E63',
+    peach: '#FF9800',
+    mint: '#E91E63',
+    lilac: '#E91E63',
+    blush: '#E91E63',
   },
   radii: {
     xs: 8,
@@ -51,7 +51,7 @@ export const MotherhoodTheme = {
       elevation: 6,
     },
     soft: {
-      shadowColor: '#C2185B',
+      shadowColor: palette.shadow,
       shadowOpacity: 0.2,
       shadowRadius: 20,
       shadowOffset: { width: 0, height: 12 },
@@ -66,6 +66,8 @@ export const MotherhoodTheme = {
     body: 16,
     label: 14,
     caption: 12,
+    small: 10,
+    xs: 8,
   },
 };
 
@@ -78,8 +80,8 @@ export const NavigationTheme = {
     background: palette.background,
     card: palette.surface,
     text: palette.textPrimary,
-    border: '#F06292',
-    notification: palette.secondary,
+    border: '#E91E63',
+    notification: palette.primary,
   },
 };
 

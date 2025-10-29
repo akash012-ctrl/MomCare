@@ -37,7 +37,7 @@ export function ResourceCard({ article, onShare, onSave, isSaved }: ResourceCard
                     </ThemedText>
                     {article.is_trending && (
                         <View style={styles.trendingBadge}>
-                            <Feather size={12} name="trending-up" color="#FF6B6B" />
+                            <Feather size={12} name="trending-up" color={colors.primary} />
                             <ThemedText style={styles.trendingText}>Trending</ThemedText>
                         </View>
                     )}
@@ -116,13 +116,13 @@ const styles = StyleSheet.create({
         paddingHorizontal: 8,
         paddingVertical: 4,
         borderRadius: 4,
-        backgroundColor: "rgba(255, 107, 107, 0.15)",
+        backgroundColor: `${colors.primary}15`,
         alignSelf: "flex-start",
     },
     trendingText: {
         fontSize: 11,
         fontWeight: "600",
-        color: "#FF6B6B",
+        color: colors.primary,
         marginLeft: 4,
     },
     cardDescription: {

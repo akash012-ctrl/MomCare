@@ -1,6 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
     ActivityIndicator,
     Modal,
@@ -27,14 +27,24 @@ export function PregnancyDateRequiredModal({
     const [selectedDate, setSelectedDate] = useState<string>("");
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    // Reset state when modal becomes visible
+    useEffect(() => {
+        if (visible) {
+            setSelectedDate("");
+            setIsSubmitting(false);
+        }
+    }, [visible]);
+
     const handleSubmit = async () => {
-        if (!selectedDate) return;
+        if (!selectedDate || isSubmitting) return;
 
         setIsSubmitting(true);
         try {
             await onDateSelected(selectedDate);
             // Success haptic feedback
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            // Reset state after successful submission
+            setSelectedDate("");
         } catch (error) {
             // Error haptic feedback
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);

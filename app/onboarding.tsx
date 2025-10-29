@@ -416,10 +416,12 @@ const styles = StyleSheet.create({
   indicator: {
     height: 8,
     borderRadius: 4,
-    backgroundColor: colors.lavender,
+    backgroundColor: colors.surface,
+    opacity: 0.5,
   },
   indicatorActive: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.surface,
+    opacity: 1,
   },
   navRow: {
     flexDirection: "row",
@@ -430,9 +432,9 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.lg,
     borderRadius: radii.md,
     borderWidth: 1,
-    borderColor: colors.lavender,
+    borderColor: colors.surface,
     backgroundColor: colors.surface,
-    shadowColor: "#000",
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -453,8 +455,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xxxl,
     paddingVertical: spacing.lg,
     borderRadius: radii.lg,
-    backgroundColor: colors.primary,
-    shadowColor: "#000",
+    backgroundColor: colors.surface,
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.4,
     shadowRadius: 10,
@@ -464,12 +466,13 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.98 }],
   },
   ctaText: {
-    color: colors.surface,
+    color: colors.primary,
     fontWeight: "600",
     fontSize: typography.subtitle,
   },
   loadingContainer: {
     justifyContent: "center",
+    alignItems: "center",
   },
   loadingText: {
     marginTop: spacing.lg,

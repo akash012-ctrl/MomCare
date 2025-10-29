@@ -42,18 +42,83 @@ interface Goal {
   created_at: string;
 }
 
+const translations = {
+  en: {
+    title: "Goals",
+    createGoal: "Create New Goal",
+    activeGoals: "Active Goals",
+    completedGoals: "Completed Goals",
+    noActiveGoals: "No active goals yet",
+    noCompletedGoals: "No completed goals yet",
+    exercise: "Exercise",
+    nutrition: "Nutrition",
+    wellness: "Wellness",
+    sleep: "Sleep",
+    learning: "Learning",
+    other: "Other",
+    goalTitle: "Goal Title",
+    description: "Description (Optional)",
+    category: "Category",
+    target: "Target",
+    unit: "Unit",
+    cancel: "Cancel",
+    create: "Create Goal",
+    update: "Update Goal",
+    markComplete: "Mark Complete",
+    delete: "Delete",
+    errorLoading: "Failed to load goals",
+    errorSaving: "Failed to save goal",
+    errorDeleting: "Failed to delete goal",
+    successCreated: "Goal created!",
+    successUpdated: "Goal updated!",
+    successDeleted: "Goal deleted!",
+  },
+  hi: {
+    title: "लक्ष्य",
+    createGoal: "नया लक्ष्य बनाएं",
+    activeGoals: "सक्रिय लक्ष्य",
+    completedGoals: "पूर्ण लक्ष्य",
+    noActiveGoals: "अभी तक कोई सक्रिय लक्ष्य नहीं",
+    noCompletedGoals: "अभी तक कोई पूर्ण लक्ष्य नहीं",
+    exercise: "व्यायाम",
+    nutrition: "पोषण",
+    wellness: "स्वास्थ्य",
+    sleep: "नींद",
+    learning: "सीखना",
+    other: "अन्य",
+    goalTitle: "लक्ष्य शीर्षक",
+    description: "विवरण (वैकल्पिक)",
+    category: "श्रेणी",
+    target: "लक्ष्य",
+    unit: "इकाई",
+    cancel: "रद्द करें",
+    create: "लक्ष्य बनाएं",
+    update: "अपडेट करें",
+    markComplete: "पूर्ण चिह्नित करें",
+    delete: "हटाएं",
+    errorLoading: "लक्ष्य लोड करने में विफल",
+    errorSaving: "लक्ष्य सेव करने में विफल",
+    errorDeleting: "लक्ष्य हटाने में विफल",
+    successCreated: "लक्ष्य बन गया!",
+    successUpdated: "लक्ष्य अपडेट हो गया!",
+    successDeleted: "लक्ष्य हटा दिया गया!",
+  },
+};
+
 const GOAL_CATEGORIES = [
-  { name: "Exercise", icon: "🏃‍♀️", color: colors.accent },
-  { name: "Nutrition", icon: "🥗", color: colors.mint },
-  { name: "Wellness", icon: "🧘‍♀️", color: colors.lavender },
-  { name: "Sleep", icon: "😴", color: colors.lilac },
-  { name: "Learning", icon: "📚", color: colors.peach },
-  { name: "Other", icon: "⭐", color: colors.blush },
+  { nameKey: "exercise" as const, icon: "🏃‍♀️", color: colors.accent },
+  { nameKey: "nutrition" as const, icon: "🥗", color: colors.mint },
+  { nameKey: "wellness" as const, icon: "🧘‍♀️", color: colors.lavender },
+  { nameKey: "sleep" as const, icon: "😴", color: colors.lilac },
+  { nameKey: "learning" as const, icon: "📚", color: colors.peach },
+  { nameKey: "other" as const, icon: "⭐", color: colors.blush },
 ];
 
 export default function Goals() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, preferredLanguage } = useAuth();
+  const language = preferredLanguage === "hi" ? "hi" : "en";
+  const t = translations[language];
   const { showAlert } = useAppAlert();
   const [refreshing, setRefreshing] = useState(false);
 

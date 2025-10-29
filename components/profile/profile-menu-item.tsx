@@ -21,7 +21,7 @@ export function ProfileMenuItem({ icon, label, onPress, isDestructive }: Profile
             onPress();
         }} style={({ pressed }) => [styles.item, pressed && styles.itemPressed]}>
             <View style={styles.itemLeft}>
-                <Feather name={icon} size={20} color={isDestructive ? "#EF5350" : colors.secondary} />
+                <Feather name={icon} size={20} color={isDestructive ? colors.primary : colors.primary} />
                 <Text style={[styles.itemLabel, isDestructive && styles.destructiveLabel]}>{label}</Text>
             </View>
             <Feather name="chevron-right" size={20} color={colors.textSecondary} />
@@ -37,7 +37,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: spacing.lg,
         paddingVertical: spacing.lg,
         borderBottomWidth: 1,
-        borderBottomColor: "#F5D6DB",
+        borderBottomColor: `${colors.primary}30`,
     },
     itemPressed: {
         backgroundColor: colors.background,
@@ -53,6 +53,6 @@ const styles = StyleSheet.create({
         fontWeight: "500",
     },
     destructiveLabel: {
-        color: "#EF5350",
+        color: colors.primary,
     },
 });

@@ -263,7 +263,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   weekInfo: {
-    color: colors.success,
+    color: colors.primary,
     fontSize: typography.label,
     marginTop: spacing.xs,
     fontWeight: "500",
@@ -328,11 +328,13 @@ const styles = StyleSheet.create({
   infoBox: {
     flexDirection: "row",
     alignItems: "flex-start",
-    backgroundColor: colors.lilac,
+    backgroundColor: colors.surface,
     borderRadius: radii.lg,
     padding: spacing.md,
     marginBottom: spacing.lg,
     gap: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.primary,
   },
   infoText: {
     flex: 1,

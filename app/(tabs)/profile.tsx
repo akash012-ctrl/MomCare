@@ -17,10 +17,29 @@ import { supabase } from "@/lib/supabase";
 
 const { colors, spacing } = MotherhoodTheme;
 
+const translations = {
+  en: {
+    settingsTab: 'Settings',
+    calendarTab: 'Calendar',
+    errorUpdatingDate: 'Failed to update date',
+    errorUpdatingLanguage: 'Failed to update language',
+    notAuthenticated: 'Not authenticated',
+  },
+  hi: {
+    settingsTab: 'सेटिंग्स',
+    calendarTab: 'कैलेंडर',
+    errorUpdatingDate: 'तारीख अपडेट करने में विफल',
+    errorUpdatingLanguage: 'भाषा अपडेट करने में विफल',
+    notAuthenticated: 'प्रमाणित नहीं',
+  },
+};
+
 export default function ProfileScreen() {
   const router = useRouter();
   const { user, signOut, preferredLanguage, updateLanguagePreference } =
     useAuth();
+  const language = preferredLanguage === "hi" ? "hi" : "en";
+  const t = translations[language];
   const [error, setError] = useState<string | null>(null);
   const [pregnancyStartDate, setPregnancyStartDate] = useState<string | null>(null);
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
@@ -163,7 +182,7 @@ export default function ProfileScreen() {
             }}
           >
             <Text style={[styles.tabText, activeTab === 'settings' && styles.activeTabText]}>
-              Settings
+              {t.settingsTab}
             </Text>
           </Pressable>
           <Pressable
@@ -174,7 +193,7 @@ export default function ProfileScreen() {
             }}
           >
             <Text style={[styles.tabText, activeTab === 'calendar' && styles.activeTabText]}>
-              Calendar
+              {t.calendarTab}
             </Text>
           </Pressable>
         </View>
@@ -261,7 +280,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   activeTab: {
-    backgroundColor: colors.secondary,
+    backgroundColor: colors.primary,
   },
   tabText: {
     color: colors.textSecondary,
@@ -269,6 +288,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   activeTabText: {
-    color: '#FFFFFF',
+    color: colors.surface,
   },
 });

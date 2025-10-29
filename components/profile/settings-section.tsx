@@ -82,18 +82,18 @@ const styles = StyleSheet.create({
     signOutButton: {
         borderRadius: radii.md,
         borderWidth: 1.5,
-        borderColor: "#EF5350",
+        borderColor: colors.primary,
         paddingVertical: spacing.lg,
         alignItems: "center",
     },
     signOutButtonPressed: {
-        backgroundColor: "rgba(239, 83, 80, 0.05)",
+        backgroundColor: `${colors.primary}15`,
     },
     signOutButtonDisabled: {
         opacity: 0.6,
     },
     signOutText: {
-        color: "#EF5350",
+        color: colors.primary,
         fontWeight: "600",
         fontSize: typography.subtitle,
     },

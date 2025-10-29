@@ -34,58 +34,31 @@ const getMarkedDates = (startDateString?: string) => {
   const todayFormatted = new Date(today);
   todayFormatted.setHours(0, 0, 0, 0);
 
-  // Mark period from start date to today
+  // Mark each date from start date to today with individual dots
   let current = new Date(startDay);
-  let isFirst = true;
-  let isLast = false;
+  let dayCount = 0;
 
   while (current <= todayFormatted) {
     const dateString = current.toISOString().split("T")[0];
     const isToday = current.getTime() === todayFormatted.getTime();
+    const isStart = current.getTime() === startDay.getTime();
 
-    // Check if it's the last day
-    const nextDay = new Date(current);
-    nextDay.setDate(nextDay.getDate() + 1);
-    isLast = nextDay > todayFormatted;
+    // Calculate which week this day belongs to
+    const weekNumber = Math.floor(dayCount / 7) + 1;
+    const isWeekMarker = dayCount > 0 && dayCount % 7 === 0; // Every 7th day after start
 
-    if (isFirst && isLast) {
-      // Single day
-      dates[dateString] = {
-        color: colors.secondary,
-        textColor: colors.surface,
-        marked: true,
-        dotColor: isToday ? colors.warning : "transparent",
-      };
-    } else if (isFirst) {
-      // Start of period
-      dates[dateString] = {
-        startingDay: true,
-        color: colors.secondary,
-        textColor: colors.surface,
-        marked: true,
-        dotColor: isToday ? colors.warning : "transparent",
-      };
-    } else if (isLast) {
-      // End of period
-      dates[dateString] = {
-        endingDay: true,
-        color: colors.secondary,
-        textColor: colors.surface,
-        marked: true,
-        dotColor: isToday ? colors.warning : "transparent",
-      };
-    } else {
-      // Middle of period
-      dates[dateString] = {
-        color: colors.secondary,
-        textColor: colors.surface,
-        marked: true,
-        dotColor: isToday ? colors.warning : "transparent",
-      };
-    }
+    // Mark each date with a dot
+    dates[dateString] = {
+      marked: true,
+      dotColor: colors.primary,
+      selected: isStart || isToday,
+      selectedColor: isStart ? colors.primary : isToday ? colors.accent : undefined,
+      selectedTextColor: (isStart || isToday) ? colors.surface : colors.textPrimary,
+      weekLabel: isWeekMarker ? `W${weekNumber}` : undefined,
+    };
 
     current.setDate(current.getDate() + 1);
-    isFirst = false;
+    dayCount++;
   }
 
   return dates;
@@ -124,29 +97,70 @@ export const PregnancyCalendar: React.FC<PregnancyCalendarProps> = ({
       <Calendar
         current={selectedDate}
         onDayPress={(day) => {
-          // Trigger haptic feedback on date selection
           Haptics.selectionAsync();
           onDateSelect?.(day.dateString);
         }}
+        onMonthChange={(month) => {
+          // Trigger haptic feedback when swiping between months
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        }}
         markedDates={allMarked}
-        markingType="period"
+        dayComponent={({ date, state }) => {
+          if (!date) return <View style={styles.dayWrapper} />;
+
+          const dateString = date.dateString;
+          const marking = allMarked[dateString];
+          const weekLabel = marking?.weekLabel;
+          const isSelected = marking?.selected;
+          const isDisabled = state === 'disabled';
+          const isMarked = marking?.marked;
+
+          return (
+            <View style={styles.dayWrapper}>
+              <View style={[
+                styles.dayContainer,
+                isSelected && styles.selectedDay,
+                isDisabled && styles.disabledDay
+              ]}>
+                <Text style={[
+                  styles.dayText,
+                  isSelected && styles.selectedDayText,
+                  isDisabled && styles.disabledDayText
+                ]}>
+                  {date.day}
+                </Text>
+                {weekLabel && (
+                  <Text style={[
+                    styles.weekLabel,
+                    isSelected && styles.selectedWeekLabel
+                  ]}>
+                    {weekLabel}
+                  </Text>
+                )}
+                {isMarked && !weekLabel && !isSelected && (
+                  <View style={styles.dotIndicator} />
+                )}
+              </View>
+            </View>
+          );
+        }}
         theme={
           {
             backgroundColor: "transparent",
             calendarBackground: colors.surface,
             textSectionTitleColor: colors.textPrimary,
             textSectionTitleDisabledColor: colors.textSecondary,
-            selectedDayBackgroundColor: colors.secondary,
+            selectedDayBackgroundColor: colors.primary,
             selectedDayTextColor: colors.surface,
-            todayTextColor: colors.secondary,
+            todayTextColor: colors.primary,
             dayTextColor: colors.textPrimary,
             textDisabledColor: colors.textSecondary,
-            dotColor: colors.secondary,
-            selectedDotColor: colors.warning,
-            arrowColor: colors.secondary,
+            dotColor: colors.primary,
+            selectedDotColor: colors.surface,
+            arrowColor: colors.primary,
             disabledArrowColor: colors.textSecondary,
             monthTextColor: colors.textPrimary,
-            indicatorColor: colors.secondary,
+            indicatorColor: colors.primary,
             textDayFontFamily: "System",
             textMonthFontFamily: "System",
             textDayHeaderFontFamily: "System",
@@ -180,13 +194,60 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   weekText: {
-    color: colors.secondary,
+    color: colors.primary,
     fontSize: 18,
     fontWeight: "700",
   },
   weekSubtext: {
     color: colors.textSecondary,
     fontSize: 11,
+    marginTop: 2,
+  },
+  dayWrapper: {
+    alignItems: "center",
+    justifyContent: "center",
+    width: 32,
+    height: 48,
+  },
+  dayContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    width: 32,
+    minHeight: 32,
+    borderRadius: 16,
+  },
+  selectedDay: {
+    backgroundColor: colors.primary,
+  },
+  disabledDay: {
+    opacity: 0.3,
+  },
+  dayText: {
+    fontSize: 12,
+    color: colors.textPrimary,
+    fontWeight: "400",
+  },
+  selectedDayText: {
+    color: colors.surface,
+    fontWeight: "600",
+  },
+  disabledDayText: {
+    color: colors.textSecondary,
+  },
+  weekLabel: {
+    fontSize: 9,
+    color: colors.primary,
+    fontWeight: "700",
+    marginTop: 1,
+  },
+  selectedWeekLabel: {
+    color: colors.surface,
+  },
+  dotIndicator: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.primary,
     marginTop: 2,
   },
 });

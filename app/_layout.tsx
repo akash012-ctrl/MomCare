@@ -1,13 +1,15 @@
 import { ThemeProvider } from "@react-navigation/native";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import React, { useEffect } from "react";
+import { Platform, StyleSheet, Text, View } from "react-native";
 import "react-native-reanimated";
 
 import { AppAlertProvider } from "@/components/ui/app-alert";
-import { NavigationTheme } from "@/constants/theme";
+import { MotherhoodTheme, NavigationTheme } from "@/constants/theme";
 import { AuthProvider } from "@/hooks/use-auth";
+import { initializeDatabase } from "@/lib/storage";
+import { registerBackgroundSync, unregisterBackgroundSync } from "@/lib/storage/sync-manager";
 
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
@@ -49,7 +51,7 @@ const errorStyles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: MotherhoodTheme.colors.background,
   },
   title: {
     fontSize: 24,
@@ -74,6 +76,26 @@ export const unstable_settings = {
 };
 
 export default function RootLayout() {
+  useEffect(() => {
+    if (Platform.OS === "web") {
+      return;
+    }
+
+    initializeDatabase().catch((error) => {
+      console.warn("Failed to initialize local storage", error);
+    });
+
+    registerBackgroundSync().catch((error) => {
+      console.warn("Background sync registration failed", error);
+    });
+
+    return () => {
+      unregisterBackgroundSync().catch((error) => {
+        console.warn("Background sync unregistration failed", error);
+      });
+    };
+  }, []);
+
   return (
     <ErrorBoundary>
       <AuthProvider>

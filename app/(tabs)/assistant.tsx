@@ -1,4 +1,5 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
+import { useNetInfo } from "@react-native-community/netinfo";
 import React, { useMemo, useState } from "react";
 import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -13,10 +14,32 @@ const { colors, spacing, typography, radii, shadows } = MotherhoodTheme;
 
 type TabType = "chat" | "voice";
 
+const translations = {
+  en: {
+    title: 'MomCare Assistant',
+    chatTab: 'Chat',
+    voiceTab: 'Voice',
+    chatOffline: 'Connect to the internet to chat with MomCare.',
+    voiceOffline: 'Connect to the internet to use realtime voice conversations.',
+    voiceSignIn: 'Sign in to unlock realtime voice conversations.',
+  },
+  hi: {
+    title: 'मॉमकेयर सहायक',
+    chatTab: 'चैट',
+    voiceTab: 'वॉयस',
+    chatOffline: 'मॉमकेयर से चैट करने के लिए इंटरनेट से कनेक्ट करें।',
+    voiceOffline: 'रियलटाइम वॉयस वार्तालाप का उपयोग करने के लिए इंटरनेट से कनेक्ट करें।',
+    voiceSignIn: 'रियलटाइम वॉयस वार्तालाप अनलॉक करने के लिए साइन इन करें।',
+  },
+};
+
 export default function AssistantScreen(): React.ReactElement {
   const { user, preferredLanguage } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>("chat");
+  const netInfo = useNetInfo();
+  const isOnline = Boolean(netInfo.isConnected && netInfo.isInternetReachable !== false);
   const language = preferredLanguage === "hi" ? "hi" : "en";
+  const t = translations[language];
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
@@ -27,16 +50,16 @@ export default function AssistantScreen(): React.ReactElement {
       >
         <View style={styles.container}>
           <View style={styles.header}>
-            <Text style={styles.title}>MomCare Assistant</Text>
+            <Text style={styles.title}>{t.title}</Text>
           </View>
 
-          <TabSelector activeTab={activeTab} onTabChange={setActiveTab} user={user} />
+          <TabSelector activeTab={activeTab} onTabChange={setActiveTab} user={user} isOnline={isOnline} translations={t} />
 
           <View style={styles.tabContainer}>
             {activeTab === "chat" ? (
-              <ChatAssistantTab user={user} language={language} />
+              <ChatAssistantTab user={user} language={language} isOnline={isOnline} />
             ) : (
-              <VoiceAssistant user={user} language={language} />
+              <VoiceAssistant user={user} language={language} isOnline={isOnline} />
             )}
           </View>
         </View>
@@ -49,10 +72,14 @@ function TabSelector({
   activeTab,
   onTabChange,
   user,
+  isOnline,
+  translations,
 }: {
   activeTab: TabType;
   onTabChange: (tab: TabType) => void;
   user: User | null;
+  isOnline: boolean;
+  translations: typeof translations.en;
 }): React.ReactElement {
   const tabs: Array<{
     key: TabType;
@@ -64,20 +91,26 @@ function TabSelector({
     () => [
       {
         key: "chat",
-        label: "Chat",
+        label: translations.chatTab,
         icon: "chatbubbles",
+        disabled: !isOnline,
+        helperText: isOnline
+          ? undefined
+          : translations.chatOffline,
       },
       {
         key: "voice",
-        label: "Voice",
+        label: translations.voiceTab,
         icon: "mic",
-        disabled: !user,
-        helperText: user
-          ? undefined
-          : "Sign in to unlock realtime voice conversations.",
+        disabled: !isOnline || !user,
+        helperText: !isOnline
+          ? translations.voiceOffline
+          : user
+            ? undefined
+            : translations.voiceSignIn,
       },
     ],
-    [user],
+    [isOnline, user, translations],
   );
 
   const helper = useMemo(() => {
@@ -154,6 +187,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.xl,
     overflow: "hidden",
     backgroundColor: colors.surface,
+    ...shadows.card,
   },
   tabSwitcher: {
     flexDirection: "row",

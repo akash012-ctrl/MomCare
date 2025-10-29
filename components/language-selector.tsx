@@ -7,6 +7,17 @@ import { MotherhoodTheme } from "@/constants/theme";
 
 const { colors, radii, spacing, typography, shadows } = MotherhoodTheme;
 
+const translations = {
+  en: {
+    title: "Language Preference",
+    subtitle: "Choose your preferred language for chat and voice interactions",
+  },
+  hi: {
+    title: "भाषा प्राथमिकता",
+    subtitle: "चैट और वॉयस इंटरैक्शन के लिए अपनी पसंदीदा भाषा चुनें",
+  },
+};
+
 interface LanguageSelectorProps {
   selectedLanguage: "en" | "hi";
   onLanguageChange: (language: "en" | "hi") => Promise<void>;
@@ -18,6 +29,7 @@ export function LanguageSelector({
   onLanguageChange,
   isLoading = false,
 }: LanguageSelectorProps) {
+  const t = translations[selectedLanguage];
   const languages = useMemo(
     () => [
       { code: "en", label: "English", flag: "🇬🇧" },
@@ -30,7 +42,7 @@ export function LanguageSelector({
     <View style={styles.container}>
       <View style={styles.header}>
         <Ionicons name="globe-outline" size={24} color={colors.primary} />
-        <Text style={styles.title}>Language Preference</Text>
+        <Text style={styles.title}>{t.title}</Text>
       </View>
 
       <View style={styles.languageGrid}>
@@ -68,7 +80,7 @@ export function LanguageSelector({
       </View>
 
       <Text style={styles.subtitle}>
-        Choose your preferred language for chat and voice interactions
+        {t.subtitle}
       </Text>
     </View>
   );

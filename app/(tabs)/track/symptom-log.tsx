@@ -32,28 +32,85 @@ interface Symptom {
   occurred_at: string;
 }
 
+const translations = {
+  en: {
+    title: "Symptom Log",
+    selectSymptom: "Select a Symptom",
+    severity: "Severity Level",
+    notes: "Notes (Optional)",
+    notesPlaceholder: "Add any additional details...",
+    logButton: "Log Symptom",
+    recentLogs: "Recent Logs",
+    noLogs: "No symptoms logged yet",
+    errorLoading: "Failed to load symptoms",
+    errorSaving: "Failed to save",
+    successSaved: "Symptom logged!",
+    nausea: "Nausea",
+    fatigue: "Fatigue",
+    backPain: "Back Pain",
+    headache: "Headache",
+    heartburn: "Heartburn",
+    swelling: "Swelling",
+    cramping: "Cramping",
+    dizziness: "Dizziness",
+    veryMild: "Very Mild",
+    mild: "Mild",
+    moderate: "Moderate",
+    severe: "Severe",
+    verySevere: "Very Severe",
+  },
+  hi: {
+    title: "लक्षण लॉग",
+    selectSymptom: "एक लक्षण चुनें",
+    severity: "गंभीरता स्तर",
+    notes: "नोट्स (वैकल्पिक)",
+    notesPlaceholder: "कोई अतिरिक्त विवरण जोड़ें...",
+    logButton: "लक्षण लॉग करें",
+    recentLogs: "हाल के लॉग",
+    noLogs: "अभी तक कोई लक्षण लॉग नहीं हुआ",
+    errorLoading: "लक्षण लोड करने में विफल",
+    errorSaving: "सेव करने में विफल",
+    successSaved: "लक्षण लॉग हो गया!",
+    nausea: "मतली",
+    fatigue: "थकान",
+    backPain: "पीठ दर्द",
+    headache: "सिरदर्द",
+    heartburn: "छाती में जलन",
+    swelling: "सूजन",
+    cramping: "ऐंठन",
+    dizziness: "चक्कर",
+    veryMild: "बहुत हल्का",
+    mild: "हल्का",
+    moderate: "मध्यम",
+    severe: "गंभीर",
+    verySevere: "बहुत गंभीर",
+  },
+};
+
 const COMMON_SYMPTOMS = [
-  { name: "Nausea", icon: "🤢", color: colors.mint },
-  { name: "Fatigue", icon: "😴", color: colors.lavender },
-  { name: "Back Pain", icon: "🩹", color: colors.peach },
-  { name: "Headache", icon: "🤕", color: colors.lilac },
-  { name: "Heartburn", icon: "🔥", color: colors.primary },
-  { name: "Swelling", icon: "💧", color: colors.accent },
-  { name: "Cramping", icon: "⚡", color: colors.blush },
-  { name: "Dizziness", icon: "💫", color: colors.mint },
+  { name: "nausea", icon: "🤢", color: colors.primary },
+  { name: "fatigue", icon: "😴", color: colors.primary },
+  { name: "backPain", icon: "🩹", color: colors.accent },
+  { name: "headache", icon: "🤕", color: colors.primary },
+  { name: "heartburn", icon: "🔥", color: colors.primary },
+  { name: "swelling", icon: "💧", color: colors.accent },
+  { name: "cramping", icon: "⚡", color: colors.primary },
+  { name: "dizziness", icon: "💫", color: colors.primary },
 ];
 
 const SEVERITY_LEVELS = [
-  { value: 1, label: "Very Mild", color: "#A8E6CF" },
-  { value: 2, label: "Mild", color: "#DCEDC1" },
-  { value: 3, label: "Moderate", color: "#FFD3B6" },
-  { value: 4, label: "Severe", color: "#FFAAA5" },
-  { value: 5, label: "Very Severe", color: "#FF8B94" },
+  { value: 1, labelKey: "veryMild" as const, color: colors.primary },
+  { value: 2, labelKey: "mild" as const, color: colors.primary },
+  { value: 3, labelKey: "moderate" as const, color: colors.accent },
+  { value: 4, labelKey: "severe" as const, color: colors.primary },
+  { value: 5, labelKey: "verySevere" as const, color: colors.primary },
 ];
 
 export default function SymptomLog() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, preferredLanguage } = useAuth();
+  const language = preferredLanguage === "hi" ? "hi" : "en";
+  const t = translations[language];
   const { showAlert } = useAppAlert();
   const [refreshing, setRefreshing] = useState(false);
 

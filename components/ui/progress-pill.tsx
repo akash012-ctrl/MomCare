@@ -15,7 +15,7 @@ interface ProgressPillProps {
 export function ProgressPill({
   progress,
   label,
-  color = colors.success,
+  color = colors.primary,
   style,
 }: ProgressPillProps) {
   const clampedProgress = Math.min(Math.max(progress, 0), 100);
@@ -56,11 +56,13 @@ const styles = StyleSheet.create({
     textAlign: "right",
   },
   pillBackground: {
-    backgroundColor: colors.mint,
+    backgroundColor: colors.background,
     borderRadius: radii.full,
     flex: 1,
     height: 8,
     overflow: "hidden",
+    borderWidth: 1,
+    borderColor: colors.primary,
   },
   pillContainer: {
     alignItems: "center",

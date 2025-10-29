@@ -60,7 +60,7 @@ export default function TrackHubScreen() {
           <Feather
             name={item.icon as keyof typeof Feather.glyphMap}
             size={28}
-            color={colors.primary}
+            color={colors.surface}
           />
         </View>
         <Text style={styles.gridTitle}>{item.title}</Text>

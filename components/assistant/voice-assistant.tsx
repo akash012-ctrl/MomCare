@@ -1,7 +1,7 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import * as Haptics from "expo-haptics";
 import { MotiView } from "moti";
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
     ActivityIndicator,
     FlatList,
@@ -40,6 +40,7 @@ type VoiceConnectionOptions = {
     user: User | null;
     language: Language;
     instructions: string;
+    isOnline: boolean;
 };
 
 type VoiceConnectionControls = {
@@ -414,7 +415,7 @@ async function fetchVoiceContextData(
     return result;
 }
 
-function useVoiceContextState(user: User | null, language: Language): VoiceContextState {
+function useVoiceContextState(user: User | null, language: Language, isOnline: boolean): VoiceContextState {
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [todayMood, setTodayMood] = useState<SymptomLog | null>(null);
     const [contextLoading, setContextLoading] = useState(false);
@@ -427,6 +428,20 @@ function useVoiceContextState(user: User | null, language: Language): VoiceConte
             setProfile(null);
             setTodayMood(null);
             setContextError(null);
+            setContextLoading(false);
+            return () => {
+                cancelled = true;
+            };
+        }
+
+        if (!isOnline) {
+            setProfile(null);
+            setTodayMood(null);
+            setContextError(
+                language === "hi"
+                    ? "कृपया वॉइस सहायक उपयोग करने के लिए इंटरनेट से कनेक्ट करें।"
+                    : "Connect to the internet to use the voice assistant.",
+            );
             setContextLoading(false);
             return () => {
                 cancelled = true;
@@ -456,7 +471,7 @@ function useVoiceContextState(user: User | null, language: Language): VoiceConte
         return () => {
             cancelled = true;
         };
-    }, [language, user?.id]);
+    }, [isOnline, language, user?.id]);
 
     return {
         profile,
@@ -571,22 +586,21 @@ function describePrimaryButton(connected: boolean, language: Language): { label:
 }
 
 function useVoiceConnectionControls(options: VoiceConnectionOptions): VoiceConnectionControls {
-    const { user, language, instructions } = options;
+    const { user, language, instructions, isOnline } = options;
     const voice = useRealtimeVoice({ language, instructions });
 
     const connecting = voice.status === "connecting";
     const connected = voice.status === "connected";
     const isActivationActive = connected && (voice.isAssistantSpeaking || voice.isUserSpeaking);
-    const primaryDisabled = connecting || !user?.id;
+    const primaryDisabled = connecting || !user?.id || !isOnline;
     const { label: primaryButtonLabel, icon: primaryButtonIcon } = describePrimaryButton(connected, language);
 
     const handlePrimaryAction = useCallback(async () => {
-        if (!user?.id) {
+        if (!user?.id || !isOnline) {
             return;
         }
 
         try {
-            // Trigger haptic feedback on voice toggle
             await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
             if (connected) {
@@ -597,7 +611,7 @@ function useVoiceConnectionControls(options: VoiceConnectionOptions): VoiceConne
         } catch (sessionError) {
             console.warn("Voice session toggle failed", sessionError);
         }
-    }, [connected, user?.id, voice]);
+    }, [connected, isOnline, user?.id, voice]);
 
     return {
         status: voice.status,
@@ -620,17 +634,24 @@ function useVoiceConnectionControls(options: VoiceConnectionOptions): VoiceConne
 interface VoiceAssistantProps {
     user: User | null;
     language: Language;
+    isOnline: boolean;
 }
 
-export function VoiceAssistant({ user, language }: VoiceAssistantProps): React.ReactElement {
-    const transcriptsRef = useRef<FlatList<AssistantMessage>>(null);
-    const context = useVoiceContextState(user, language);
+export function VoiceAssistant({ user, language, isOnline }: VoiceAssistantProps): React.ReactElement {
+    const context = useVoiceContextState(user, language, isOnline);
     const derived = useVoiceDerivedData(user, language, context);
     const voice = useVoiceConnectionControls({
         user,
         language,
         instructions: derived.sessionInstructions,
+        isOnline,
     });
+
+    const voiceConnectivityMessage = isOnline
+        ? voice.error
+        : language === "hi"
+            ? "रियलटाइम वॉइस उपयोग करने के लिए इंटरनेट से कनेक्ट करें।"
+            : "Connect to the internet to use realtime voice conversations.";
 
     return (
         <View style={styles.voiceContainer}>
@@ -645,6 +666,7 @@ export function VoiceAssistant({ user, language }: VoiceAssistantProps): React.R
                 primaryDisabled={voice.primaryDisabled}
                 onPrimaryAction={voice.handlePrimaryAction}
                 userPresent={!!user?.id}
+                isOnline={isOnline}
             />
 
             <VoiceContextView
@@ -654,7 +676,7 @@ export function VoiceAssistant({ user, language }: VoiceAssistantProps): React.R
                 language={language}
             />
 
-            <VoiceErrorBanner error={voice.error} />
+            <VoiceErrorBanner error={voiceConnectivityMessage} />
         </View>
     );
 }
@@ -670,6 +692,7 @@ interface VoiceHeroCardProps {
     primaryDisabled: boolean;
     onPrimaryAction: () => void;
     userPresent: boolean;
+    isOnline: boolean;
 }
 
 function VoiceHeroCard({
@@ -683,14 +706,19 @@ function VoiceHeroCard({
     primaryDisabled,
     onPrimaryAction,
     userPresent,
+    isOnline,
 }: VoiceHeroCardProps): React.ReactElement {
-    const subtitle = connected
+    const subtitle = !isOnline
         ? language === "hi"
-            ? `${displayName} जी, मैं ध्यान से सुन रही हूँ।`
-            : `I'm listening, ${displayName}.`
-        : language === "hi"
-            ? "बस बटन दबाएं और चर्चा शुरू करें।"
-            : "Tap start and speak naturally.";
+            ? "इंटरनेट से कनेक्ट करें और फिर से कोशिश करें।"
+            : "Connect to the internet to start a conversation."
+        : connected
+            ? language === "hi"
+                ? `${displayName} जी, मैं ध्यान से सुन रही हूँ।`
+                : `I'm listening, ${displayName}.`
+            : language === "hi"
+                ? "बस बटन दबाएं और चर्चा शुरू करें।"
+                : "Tap start and speak naturally.";
 
     const waveformStyle: StyleProp<ViewStyle> = [
         styles.voiceWaveform,
@@ -735,7 +763,15 @@ function VoiceHeroCard({
                 />
             </Pressable>
 
-            {!userPresent && (
+            {!isOnline && (
+                <Text style={styles.voiceNote}>
+                    {language === "hi"
+                        ? "रियलटाइम वॉइस उपयोग करने के लिए इंटरनेट से कनेक्ट करें।"
+                        : "Connect to the internet to use realtime voice conversations."}
+                </Text>
+            )}
+
+            {!userPresent && isOnline && (
                 <Text style={styles.voiceNote}>
                     Sign in to unlock realtime voice conversations.
                 </Text>
