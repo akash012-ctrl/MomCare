@@ -1,11 +1,11 @@
 import { Feather } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { MotiView } from "moti";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Dimensions,
   FlatList,
   ImageBackground,
   Pressable,
@@ -25,8 +25,6 @@ const { colors, radii, spacing, typography, shadows } = MotherhoodTheme;
 // Onboarding background images
 const ONBOARDING_IMAGES = [
   require("@/assets/onboarding_images/1_illustration.jpg"),
-  require("@/assets/onboarding_images/2_illustration.jpg"),
-  require("@/assets/onboarding_images/3_illustration.jpg"),
   require("@/assets/onboarding_images/4_illustration.jpg"),
   require("@/assets/onboarding_images/5_illustration.jpg"),
   require("@/assets/onboarding_images/6_illustration.jpg"),
@@ -76,19 +74,10 @@ function SlideCard({ slide, index }: SlideCardProps) {
 
         <View style={styles.slideContent}>
           <MotiView
-            from={{ opacity: 0, translateY: 30 }}
+            from={{ opacity: 0, translateY: -20 }}
             animate={{ opacity: 1, translateY: 0 }}
             transition={{ delay: index * 60, type: "timing", duration: 400 }}
-            style={styles.iconBadge}
           >
-            <LinearGradient
-              colors={[colors.primary, colors.secondary]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.iconGradient}
-            >
-              <Feather name={slide.icon} size={26} color={colors.surface} />
-            </LinearGradient>
           </MotiView>
           <Text style={styles.slideTitle}>{slide.title}</Text>
           <Text style={styles.slideDescription}>{slide.description}</Text>
@@ -146,44 +135,48 @@ function OnboardingContent({
         renderItem={({ item, index }) => (
           <SlideCard slide={item} index={index} />
         )}
+        style={styles.flatList}
       />
 
-      <View style={styles.indicatorRow}>
-        {slides.map((_: OnboardingSlide, index: number) => (
-          <SlideIndicator
-            key={index}
-            index={index}
-            isActive={index === activeIndex}
-          />
-        ))}
-      </View>
+      {/* Overlay indicators and buttons on top of images */}
+      <View style={styles.overlayControls}>
+        <View style={styles.indicatorRow}>
+          {slides.map((_: OnboardingSlide, index: number) => (
+            <SlideIndicator
+              key={index}
+              index={index}
+              isActive={index === activeIndex}
+            />
+          ))}
+        </View>
 
-      <View style={styles.navRow}>
-        <Pressable
-          accessibilityRole="button"
-          disabled={isFirstSlide}
-          onPress={handlePrevious}
-          style={({ pressed }) => [
-            styles.navButton,
-            pressed && styles.navButtonPressed,
-            isFirstSlide && styles.navButtonDisabled,
-          ]}
-        >
-          <Text style={styles.navButtonText}>Previous</Text>
-        </Pressable>
+        <View style={styles.navRow}>
+          <Pressable
+            accessibilityRole="button"
+            disabled={isFirstSlide}
+            onPress={handlePrevious}
+            style={({ pressed }) => [
+              styles.navButton,
+              pressed && styles.navButtonPressed,
+              isFirstSlide && styles.navButtonDisabled,
+            ]}
+          >
+            <Text style={styles.navButtonText}>Previous</Text>
+          </Pressable>
 
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => void handleNext()}
-          style={({ pressed }) => [
-            styles.ctaButton,
-            pressed && styles.ctaButtonPressed,
-          ]}
-        >
-          <Text style={styles.ctaText}>
-            {isLastSlide ? "Start My Journey" : "Next"}
-          </Text>
-        </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => void handleNext()}
+            style={({ pressed }) => [
+              styles.ctaButton,
+              pressed && styles.ctaButtonPressed,
+            ]}
+          >
+            <Text style={styles.ctaText}>
+              {isLastSlide ? "Start My Journey" : "Next"}
+            </Text>
+          </Pressable>
+        </View>
       </View>
     </View>
   );
@@ -349,17 +342,27 @@ export default function OnboardingCarouselScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: colors.textPrimary,
+    backgroundColor: "transparent",
   },
   container: {
     flex: 1,
-    paddingVertical: spacing.xxxl,
+    backgroundColor: "transparent",
+  },
+  flatList: {
+    flex: 1,
+  },
+  overlayControls: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingBottom: spacing.xxxl,
+    paddingHorizontal: spacing.xl,
     alignItems: "center",
     gap: spacing.xxl,
-    backgroundColor: colors.textPrimary,
   },
   slide: {
-    width: spacing.xxxl * 12,
+    width: Dimensions.get("window").width,
     height: "100%",
   },
   slideBackground: {
@@ -378,34 +381,33 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
     paddingHorizontal: spacing.xxxl,
   },
-  iconBadge: {
-    width: 80,
-    height: 80,
-    borderRadius: radii.lg,
-    ...shadows.soft,
-  },
-  iconGradient: {
-    flex: 1,
-    borderRadius: radii.lg,
-    alignItems: "center",
-    justifyContent: "center",
+  slideHeading: {
+    fontSize: typography.title,
+    fontWeight: "800",
+    color: colors.surface,
+    textAlign: "center",
+    marginBottom: spacing.md,
+    textShadowColor: "rgba(0, 0, 0, 0.9)",
+    textShadowOffset: { width: 0, height: 3 },
+    textShadowRadius: 6,
   },
   slideTitle: {
     fontSize: typography.headline,
     fontWeight: "700",
     color: colors.surface,
-    textShadowColor: "rgba(0, 0, 0, 0.75)",
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
+    textAlign: "center",
+    textShadowColor: "rgba(0, 0, 0, 0.9)",
+    textShadowOffset: { width: 0, height: 3 },
+    textShadowRadius: 6,
   },
   slideDescription: {
     fontSize: typography.body,
     color: colors.surface,
     textAlign: "center",
     lineHeight: 22,
-    textShadowColor: "rgba(0, 0, 0, 0.75)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
+    textShadowColor: "rgba(0, 0, 0, 0.9)",
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 5,
   },
   indicatorRow: {
     flexDirection: "row",
@@ -430,6 +432,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.lavender,
     backgroundColor: colors.surface,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
   navButtonDisabled: {
     opacity: 0.4,
@@ -447,7 +454,11 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.lg,
     borderRadius: radii.lg,
     backgroundColor: colors.primary,
-    ...shadows.card,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    elevation: 10,
   },
   ctaButtonPressed: {
     transform: [{ scale: 0.98 }],
