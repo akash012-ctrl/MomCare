@@ -53,25 +53,8 @@ export interface LocalGoal {
     sync_status: SyncStatus;
 }
 
-export interface CachedArticle {
-    id: string;
-    category?: string | null;
-    title: string;
-    description?: string | null;
-    content?: string | null;
-    image_url?: string | null;
-    url?: string | null;
-    tags?: string[];
-    is_trending?: number;
-    updated_at?: string | null;
-    expires_at?: number | null;
-}
-
-export interface CachedTip extends CachedArticle { }
-
 export type SyncDomain =
     | "profile"
     | "kicks"
     | "symptoms"
-    | "goals"
-    | "content";
+    | "goals";

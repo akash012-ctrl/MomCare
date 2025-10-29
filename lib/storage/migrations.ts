@@ -61,35 +61,7 @@ export const MIGRATIONS: Migration[] = [
         updated_at TEXT NOT NULL,
         sync_status TEXT NOT NULL DEFAULT 'pending'
       );`,
-            `CREATE INDEX IF NOT EXISTS idx_goals_user ON goals_local(user_id);`,
-            `CREATE TABLE IF NOT EXISTS articles_cache (
-        id TEXT PRIMARY KEY,
-        category TEXT,
-        title TEXT,
-        description TEXT,
-        content TEXT,
-        image_url TEXT,
-        url TEXT,
-        tags TEXT,
-        is_trending INTEGER DEFAULT 0,
-        updated_at TEXT,
-        expires_at INTEGER
-      );`,
-            `CREATE INDEX IF NOT EXISTS idx_articles_category ON articles_cache(category);`,
-            `CREATE TABLE IF NOT EXISTS tips_cache (
-        id TEXT PRIMARY KEY,
-        category TEXT,
-        title TEXT,
-        description TEXT,
-        content TEXT,
-        image_url TEXT,
-        url TEXT,
-        tags TEXT,
-        is_trending INTEGER DEFAULT 0,
-        updated_at TEXT,
-        expires_at INTEGER
-      );`,
-            `CREATE INDEX IF NOT EXISTS idx_tips_category ON tips_cache(category);`
+            `CREATE INDEX IF NOT EXISTS idx_goals_user ON goals_local(user_id);`
         ],
     },
 ];

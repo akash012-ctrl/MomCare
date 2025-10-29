@@ -4,7 +4,6 @@ import * as TaskManager from "expo-task-manager";
 
 import { getCachedUserSession } from "../cache-manager";
 import { supabase } from "../supabase";
-import { cacheArticles, cacheTips, purgeExpiredContent } from "./content-cache";
 import {
     getPendingGoals,
     getPendingKickEntries,
@@ -21,10 +20,8 @@ import { updateSyncState } from "./sync-state";
 import type { LocalGoal, LocalKickEntry, LocalSymptomLog, SyncDomain } from "./types";
 
 const SYNC_TASK_NAME = "momcare-background-sync";
-const CONTENT_TTL_MS = 1000 * 60 * 60 * 24 * 2; // 48 hours
 
 interface SyncOptions {
-    includeContent?: boolean;
     skipIfOffline?: boolean;
 }
 
@@ -391,84 +388,6 @@ async function syncGoals(userId: string): Promise<void> {
     await syncMetricDomain(userId, goalSyncConfig);
 }
 
-interface ContentRow {
-    id: string;
-    category?: string | null;
-    title: string;
-    description?: string | null;
-    content?: string | null;
-    image_url?: string | null;
-    url?: string | null;
-    tags?: string[] | null;
-    is_trending?: boolean | number | null;
-    updated_at?: string | null;
-}
-
-interface RemoteContentSets {
-    articles: ContentRow[];
-    tips: ContentRow[];
-}
-
-async function fetchRemoteContent(): Promise<RemoteContentSets> {
-    const [articleResult, tipResult] = await Promise.all([
-        supabase
-            .from("articles")
-            .select("id,category,title,description,content,image_url,url,tags,is_trending,updated_at")
-            .order("updated_at", { ascending: false })
-            .limit(50),
-        supabase
-            .from("tips")
-            .select("id,category,title,description,content,image_url,url,tags,is_trending,updated_at")
-            .order("updated_at", { ascending: false })
-            .limit(50),
-    ]);
-
-    if (articleResult.error) throw articleResult.error;
-    if (tipResult.error) throw tipResult.error;
-
-    return {
-        articles: articleResult.data ?? [],
-        tips: tipResult.data ?? [],
-    };
-}
-
-function toCachedContent(row: ContentRow) {
-    return {
-        id: row.id,
-        category: row.category ?? null,
-        title: row.title,
-        description: row.description ?? null,
-        content: row.content ?? null,
-        image_url: row.image_url ?? null,
-        url: row.url ?? null,
-        tags: Array.isArray(row.tags) ? row.tags.filter((tag) => typeof tag === "string") : [],
-        is_trending: row.is_trending ? 1 : 0,
-        updated_at: row.updated_at ?? new Date().toISOString(),
-    };
-}
-
-async function persistContentSets({ articles, tips }: RemoteContentSets): Promise<void> {
-    await purgeExpiredContent();
-
-    await Promise.all([
-        cacheArticles(articles.map(toCachedContent), CONTENT_TTL_MS),
-        cacheTips(tips.map(toCachedContent), CONTENT_TTL_MS),
-    ]);
-}
-
-async function syncContent(): Promise<void> {
-    try {
-        const content = await fetchRemoteContent();
-        await persistContentSets(content);
-
-        await recordSyncSuccess("content");
-    } catch (error) {
-        console.error("Content sync failed", error);
-        await recordSyncFailure("content", error);
-        throw error;
-    }
-}
-
 export async function syncAll(userId: string, options: SyncOptions = {}): Promise<void> {
     if (!userId) {
         return;
@@ -483,10 +402,6 @@ export async function syncAll(userId: string, options: SyncOptions = {}): Promis
 
     await syncProfile(userId);
     await Promise.all([syncKickEntries(userId), syncSymptoms(userId), syncGoals(userId)]);
-
-    if (options.includeContent) {
-        await syncContent();
-    }
 }
 
 async function backgroundTaskHandler(): Promise<BackgroundFetch.BackgroundFetchResult> {
@@ -501,7 +416,7 @@ async function backgroundTaskHandler(): Promise<BackgroundFetch.BackgroundFetchR
             return BackgroundFetch.BackgroundFetchResult.NoData;
         }
 
-        await syncAll(userId, { includeContent: true });
+        await syncAll(userId);
         return BackgroundFetch.BackgroundFetchResult.NewData;
     } catch (error) {
         console.error("Background sync error", error);

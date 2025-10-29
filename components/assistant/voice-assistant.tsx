@@ -585,6 +585,19 @@ function describePrimaryButton(connected: boolean, language: Language): { label:
     };
 }
 
+async function toggleVoiceSession(
+    connected: boolean,
+    voice: { connect: () => Promise<void>; disconnect: () => Promise<void> }
+): Promise<void> {
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    if (connected) {
+        await voice.disconnect();
+    } else {
+        await voice.connect();
+    }
+}
+
 function useVoiceConnectionControls(options: VoiceConnectionOptions): VoiceConnectionControls {
     const { user, language, instructions, isOnline } = options;
     const voice = useRealtimeVoice({ language, instructions });
@@ -601,13 +614,7 @@ function useVoiceConnectionControls(options: VoiceConnectionOptions): VoiceConne
         }
 
         try {
-            await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-
-            if (connected) {
-                await voice.disconnect();
-            } else {
-                await voice.connect();
-            }
+            await toggleVoiceSession(connected, voice);
         } catch (sessionError) {
             console.warn("Voice session toggle failed", sessionError);
         }
@@ -695,6 +702,48 @@ interface VoiceHeroCardProps {
     isOnline: boolean;
 }
 
+function getVoiceSubtitle(isOnline: boolean, connected: boolean, displayName: string, language: Language): string {
+    if (!isOnline) {
+        return language === "hi"
+            ? "इंटरनेट से कनेक्ट करें और फिर से कोशिश करें।"
+            : "Connect to the internet to start a conversation.";
+    }
+
+    if (connected) {
+        return language === "hi"
+            ? `${displayName} जी, मैं ध्यान से सुन रही हूँ।`
+            : `I'm listening, ${displayName}.`;
+    }
+
+    return language === "hi"
+        ? "बस बटन दबाएं और चर्चा शुरू करें।"
+        : "Tap start and speak naturally.";
+}
+
+function getWaveformStyle(
+    isActivationActive: boolean,
+    connected: boolean
+): StyleProp<ViewStyle> {
+    return [
+        styles.voiceWaveform,
+        isActivationActive ? styles.voiceWaveformActive : null,
+        connected ? styles.voiceWaveformConnected : null,
+    ];
+}
+
+function getButtonStyle(
+    connected: boolean,
+    primaryDisabled: boolean,
+    pressed: boolean
+): StyleProp<ViewStyle> {
+    return [
+        styles.voicePrimaryButton,
+        connected ? styles.voicePrimaryButtonConnected : null,
+        primaryDisabled ? styles.voicePrimaryButtonDisabled : null,
+        pressed && !primaryDisabled ? styles.voicePrimaryButtonPressed : null,
+    ];
+}
+
 function VoiceHeroCard({
     connected,
     connecting,
@@ -708,30 +757,10 @@ function VoiceHeroCard({
     userPresent,
     isOnline,
 }: VoiceHeroCardProps): React.ReactElement {
-    const subtitle = !isOnline
-        ? language === "hi"
-            ? "इंटरनेट से कनेक्ट करें और फिर से कोशिश करें।"
-            : "Connect to the internet to start a conversation."
-        : connected
-            ? language === "hi"
-                ? `${displayName} जी, मैं ध्यान से सुन रही हूँ।`
-                : `I'm listening, ${displayName}.`
-            : language === "hi"
-                ? "बस बटन दबाएं और चर्चा शुरू करें।"
-                : "Tap start and speak naturally.";
-
-    const waveformStyle: StyleProp<ViewStyle> = [
-        styles.voiceWaveform,
-        isActivationActive ? styles.voiceWaveformActive : null,
-        connected ? styles.voiceWaveformConnected : null,
-    ];
-
-    const buttonStyle = ({ pressed }: PressableStateCallbackType): StyleProp<ViewStyle> => [
-        styles.voicePrimaryButton,
-        connected ? styles.voicePrimaryButtonConnected : null,
-        primaryDisabled ? styles.voicePrimaryButtonDisabled : null,
-        pressed && !primaryDisabled ? styles.voicePrimaryButtonPressed : null,
-    ];
+    const subtitle = getVoiceSubtitle(isOnline, connected, displayName, language);
+    const waveformStyle = getWaveformStyle(isActivationActive, connected);
+    const buttonStyle = ({ pressed }: PressableStateCallbackType): StyleProp<ViewStyle> =>
+        getButtonStyle(connected, primaryDisabled, pressed);
 
     return (
         <View style={styles.voiceHeroCard}>
